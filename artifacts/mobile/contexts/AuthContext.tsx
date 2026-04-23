@@ -68,12 +68,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(async (body: RegisterBody) => {
     const result = await apiRegister(body);
-    await Promise.all([
-      AsyncStorage.setItem(TOKEN_KEY, result.token),
-      AsyncStorage.setItem(USER_KEY, JSON.stringify(result.user)),
-    ]);
-    setToken(result.token);
-    setUser(result.user);
     return result;
   }, []);
 

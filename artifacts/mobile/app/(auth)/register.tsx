@@ -26,10 +26,11 @@ export default function RegisterScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, login } = useAuth();
 
   const [step, setStep] = useState<Step>("form");
   const [assignedUser, setAssignedUser] = useState<UserProfile | null>(null);
+  const [assignedToken, setAssignedToken] = useState<string | null>(null);
 
   const [joinCode, setJoinCode] = useState("");
   const [password, setPassword] = useState("");
@@ -57,6 +58,7 @@ export default function RegisterScreen() {
       const result = await register({ joinCode: joinCode.trim().toUpperCase(), password });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setAssignedUser(result.user);
+      setAssignedToken(result.token);
       setStep("success");
     } catch (err: unknown) {
       const e = err as { data?: { error?: string } };
@@ -66,7 +68,9 @@ export default function RegisterScreen() {
     }
   };
 
-  const handleEnterApp = () => {
+  const handleEnterApp = async () => {
+    if (!assignedToken || !assignedUser) return;
+    await login(assignedToken, assignedUser);
     router.replace("/(tabs)");
   };
 
