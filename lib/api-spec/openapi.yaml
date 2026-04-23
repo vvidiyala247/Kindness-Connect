@@ -103,6 +103,20 @@ paths:
           $ref: "#/components/responses/Unauthorized"
 
   /schools:
+    get:
+      operationId: listSchools
+      tags: [schools]
+      summary: List all active schools (public)
+      security: []
+      responses:
+        "200":
+          description: List of active schools
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/School"
     post:
       operationId: createSchool
       tags: [schools]

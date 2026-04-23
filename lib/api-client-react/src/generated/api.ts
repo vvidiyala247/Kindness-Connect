@@ -362,6 +362,79 @@ export function useGetMe<
 }
 
 /**
+ * @summary List all active schools (public)
+ */
+export const getListSchoolsUrl = () => {
+  return `/api/schools`;
+};
+
+export const listSchools = async (options?: RequestInit): Promise<School[]> => {
+  return customFetch<School[]>(getListSchoolsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListSchoolsQueryKey = () => {
+  return [`/api/schools`] as const;
+};
+
+export const getListSchoolsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSchools>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSchools>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListSchoolsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listSchools>>> = ({
+    signal,
+  }) => listSchools({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSchools>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSchoolsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSchools>>
+>;
+export type ListSchoolsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all active schools (public)
+ */
+
+export function useListSchools<
+  TData = Awaited<ReturnType<typeof listSchools>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSchools>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSchoolsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Create a new school (admin only)
  */
 export const getCreateSchoolUrl = () => {

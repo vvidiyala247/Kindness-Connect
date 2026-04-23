@@ -27,6 +27,15 @@ async function generateUniqueJoinCode(): Promise<string> {
   throw new Error("Failed to generate unique join code after 20 attempts");
 }
 
+router.get("/schools", async (_req, res): Promise<void> => {
+  const schools = await db
+    .select({ id: schoolsTable.id, name: schoolsTable.name, joinCode: schoolsTable.joinCode, isActive: schoolsTable.isActive, createdAt: schoolsTable.createdAt })
+    .from(schoolsTable)
+    .where(eq(schoolsTable.isActive, true))
+    .orderBy(schoolsTable.name);
+  res.json(schools);
+});
+
 router.post("/schools", requireAdmin, async (req, res): Promise<void> => {
   const parsed = CreateSchoolBody.safeParse(req.body);
   if (!parsed.success) {

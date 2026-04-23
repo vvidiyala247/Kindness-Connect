@@ -60,6 +60,18 @@ export const GetMeResponse = zod.object({
 });
 
 /**
+ * @summary List all active schools (public)
+ */
+export const ListSchoolsResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  joinCode: zod.string(),
+  isActive: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+export const ListSchoolsResponse = zod.array(ListSchoolsResponseItem);
+
+/**
  * @summary Create a new school (admin only)
  */
 export const CreateSchoolBody = zod.object({
