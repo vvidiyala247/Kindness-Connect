@@ -59,8 +59,8 @@ router.get("/schools/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  if (req.user!.role !== "admin" && req.user!.schoolId !== school.id) {
-    res.status(403).json({ error: "Access denied" });
+  if (req.user!.schoolId !== school.id) {
+    res.status(404).json({ error: "School not found" });
     return;
   }
 

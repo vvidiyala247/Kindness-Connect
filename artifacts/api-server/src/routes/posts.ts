@@ -159,6 +159,16 @@ router.post("/posts/:id/like", requireAuth, async (req, res): Promise<void> => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const liker = req.user!;
 
+  const [likerUser] = await db
+    .select({ isSuspended: usersTable.isSuspended })
+    .from(usersTable)
+    .where(eq(usersTable.id, liker.userId));
+
+  if (likerUser?.isSuspended) {
+    res.status(403).json({ error: "Your account has been suspended" });
+    return;
+  }
+
   const [post] = await db
     .select()
     .from(postsTable)

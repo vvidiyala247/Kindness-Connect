@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
-import { db, reportsTable, postsTable, commentsTable } from "@workspace/db";
+import { db, reportsTable, postsTable, commentsTable, usersTable } from "@workspace/db";
 import { CreateReportBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
 
@@ -15,6 +15,16 @@ router.post("/reports", requireAuth, async (req, res): Promise<void> => {
 
   const { targetType, targetId, reason } = parsed.data;
   const schoolId = req.user!.schoolId;
+
+  const [reporterRow] = await db
+    .select({ isSuspended: usersTable.isSuspended })
+    .from(usersTable)
+    .where(eq(usersTable.id, req.user!.userId));
+
+  if (reporterRow?.isSuspended) {
+    res.status(403).json({ error: "Your account has been suspended" });
+    return;
+  }
 
   // Validate the target exists and belongs to the reporter's school
   if (targetType === "post") {
