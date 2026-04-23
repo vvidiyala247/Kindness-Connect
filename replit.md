@@ -97,8 +97,22 @@ All tables are in PostgreSQL managed by Drizzle ORM.
 
 ### Mobile App
 - Expo Router for file-based navigation
-- AuthContext wraps the app and exposes `user`, `token`, `login`, `register`, `logout`
+- AuthContext wraps the app and exposes `user`, `token`, `login`, `logout`, `refreshUser`
+  - On app boot: restores JWT from AsyncStorage, then fetches `/api/auth/me` to hydrate current user (including role)
+  - User is persisted to `kc_user` in AsyncStorage so admin tab survives app restart
 - API calls use React Query hooks from `@workspace/api-client-react`
+- `setBaseUrl` + `setAuthTokenGetter` configured at module level in `app/_layout.tsx`
+- Navigation: auth guard in root layout redirects unauthenticated users to login
+- Screens:
+  - `(auth)/login` — nickname + schoolId + password login
+  - `(auth)/register` — join code + password, shows assigned nickname on success
+  - `(tabs)/index` — feed with filter chips (All/Support/Kindness)
+  - `(tabs)/new-post` — create post (support or kindness act)
+  - `(tabs)/profile` — user profile, kindness score, milestone rank, own posts list
+  - `(tabs)/admin` — moderation dashboard (admin-role-gated, hidden from students)
+  - `post/[id]` — post detail with comments + comment input
+- Components: PostCard, CommentItem, KindnessScore, ReportModal, EmptyState
+- Tab bar: NativeTabs (iOS 26 liquid glass) with classic BlurView fallback
 - Never store sensitive user data beyond the JWT token
 - All screens must work without an internet connection gracefully (empty states)
 

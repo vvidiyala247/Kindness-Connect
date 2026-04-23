@@ -16,16 +16,21 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useRegister } from "@workspace/api-client-react";
-import type { ErrorType } from "@workspace/api-client-react";
+import type { AuthResponse } from "@workspace/api-client-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
+
+type Step = "form" | "success";
 
 export default function RegisterScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { login } = useAuth();
+
+  const [step, setStep] = useState<Step>("form");
+  const [assignedResult, setAssignedResult] = useState<AuthResponse | null>(null);
 
   const [joinCode, setJoinCode] = useState("");
   const [password, setPassword] = useState("");
@@ -35,12 +40,12 @@ export default function RegisterScreen() {
 
   const registerMutation = useRegister({
     mutation: {
-      onSuccess: async (data) => {
+      onSuccess: (data) => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        await login(data.token, data.user);
-        router.replace("/(tabs)");
+        setAssignedResult(data);
+        setStep("success");
       },
-      onError: (err: ErrorType<unknown>) => {
+      onError: (err) => {
         setErrorMsg(
           (err as { data?: { error?: string } })?.data?.error ?? "Registration failed."
         );
@@ -65,6 +70,69 @@ export default function RegisterScreen() {
     registerMutation.mutate({ data: { joinCode: joinCode.trim().toUpperCase(), password } });
   };
 
+  const handleEnterApp = async () => {
+    if (!assignedResult) return;
+    await login(assignedResult.token, assignedResult.user);
+    router.replace("/(tabs)");
+  };
+
+  if (step === "success" && assignedResult) {
+    return (
+      <View
+        style={[
+          styles.successContainer,
+          {
+            backgroundColor: colors.background,
+            paddingTop: insets.top + 32,
+            paddingBottom: insets.bottom + 32,
+          },
+        ]}
+      >
+        <View style={[styles.successIconWrap, { backgroundColor: colors.accent + "22" }]}>
+          <Feather name="shield" size={40} color={colors.accent} />
+        </View>
+
+        <Text style={[styles.successTitle, { color: colors.foreground }]}>
+          You're in!
+        </Text>
+        <Text style={[styles.successSubtitle, { color: colors.mutedForeground }]}>
+          Your anonymous nickname is:
+        </Text>
+
+        <View style={[styles.nicknameBadge, { backgroundColor: colors.kindness, borderRadius: colors.radius }]}>
+          <Text style={[styles.nicknameText, { color: colors.kindnessForeground }]}>
+            {assignedResult.user.nickname}
+          </Text>
+        </View>
+
+        <Text style={[styles.nicknameNote, { color: colors.mutedForeground }]}>
+          This is your identity in the community. No real names are shared — ever.
+          Write it down so you can log in next time!
+        </Text>
+
+        <View style={[styles.schoolInfo, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.schoolLabel, { color: colors.mutedForeground }]}>Your School ID</Text>
+          <Text style={[styles.schoolId, { color: colors.foreground }]} numberOfLines={1}>
+            {assignedResult.user.schoolId}
+          </Text>
+          <Text style={[styles.schoolNote, { color: colors.mutedForeground }]}>
+            Save this — you'll need it to log in
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.enterBtn, { backgroundColor: colors.primary }]}
+          onPress={handleEnterApp}
+        >
+          <Text style={[styles.enterBtnText, { color: colors.primaryForeground }]}>
+            Enter the Community
+          </Text>
+          <Feather name="arrow-right" size={18} color={colors.primaryForeground} />
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={[styles.flex, { backgroundColor: colors.background }]}
@@ -88,7 +156,7 @@ export default function RegisterScreen() {
           </Text>
         </View>
 
-        <View style={styles.infoBox}>
+        <View style={[styles.infoBox, { backgroundColor: colors.accent + "1a" }]}>
           <Feather name="shield" size={16} color={colors.accent} />
           <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
             Your identity stays private. You'll be known by a fun animal nickname only.
@@ -192,6 +260,84 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 24,
   },
+  successContainer: {
+    flex: 1,
+    paddingHorizontal: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 18,
+  },
+  successIconWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  successTitle: {
+    fontSize: 30,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.5,
+  },
+  successSubtitle: {
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+  },
+  nicknameBadge: {
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+  },
+  nicknameText: {
+    fontSize: 24,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.5,
+    textAlign: "center",
+  },
+  nicknameNote: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 19,
+  },
+  schoolInfo: {
+    width: "100%",
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 16,
+    gap: 4,
+    alignSelf: "stretch",
+  },
+  schoolLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  schoolId: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+  },
+  schoolNote: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+  },
+  enterBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+    alignSelf: "stretch",
+    marginTop: 4,
+  },
+  enterBtnText: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+  },
   backBtn: {
     marginTop: 4,
     marginBottom: 8,
@@ -215,7 +361,6 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: "#81b29a22",
     alignItems: "flex-start",
   },
   infoText: {

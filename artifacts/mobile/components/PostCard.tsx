@@ -20,6 +20,7 @@ import { useColors } from "@/hooks/useColors";
 interface PostCardProps {
   post: Post;
   currentUserId?: string;
+  commentCount?: number;
   onReport?: (post: Post) => void;
 }
 
@@ -28,7 +29,7 @@ const TYPE_LABELS: Record<string, string> = {
   kindness_act: "Kindness Act",
 };
 
-export function PostCard({ post, currentUserId, onReport }: PostCardProps) {
+export function PostCard({ post, currentUserId, commentCount, onReport }: PostCardProps) {
   const colors = useColors();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -42,8 +43,10 @@ export function PostCard({ post, currentUserId, onReport }: PostCardProps) {
         queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
       },
       onError: () => {
-        setLiked((prev) => !prev);
-        setLocalLikes((prev) => (liked ? prev - 1 : prev + 1));
+        setLiked((wasLiked) => {
+          setLocalLikes((prev) => (wasLiked ? prev - 1 : prev + 1));
+          return !wasLiked;
+        });
       },
     },
   });
@@ -51,8 +54,11 @@ export function PostCard({ post, currentUserId, onReport }: PostCardProps) {
   const handleLike = () => {
     if (likeMutation.isPending) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setLiked((prev) => !prev);
-    setLocalLikes((prev) => (liked ? prev - 1 : prev + 1));
+    setLiked((prev) => {
+      const nowLiked = !prev;
+      setLocalLikes((l) => (nowLiked ? l + 1 : l - 1));
+      return nowLiked;
+    });
     likeMutation.mutate({ id: post.id });
   };
 
@@ -92,19 +98,19 @@ export function PostCard({ post, currentUserId, onReport }: PostCardProps) {
       </Text>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.likeBtn} onPress={handleLike}>
+        <TouchableOpacity style={styles.statBtn} onPress={handleLike}>
           {likeMutation.isPending ? (
             <ActivityIndicator size="small" color={typeColor} />
           ) : (
             <Feather
-              name={liked ? "heart" : "heart"}
+              name="heart"
               size={16}
               color={liked ? colors.support : colors.mutedForeground}
             />
           )}
           <Text
             style={[
-              styles.likeCount,
+              styles.statCount,
               { color: liked ? colors.support : colors.mutedForeground },
             ]}
           >
@@ -112,8 +118,16 @@ export function PostCard({ post, currentUserId, onReport }: PostCardProps) {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.commentBtn} onPress={() => router.push(`/post/${post.id}`)}>
+        <TouchableOpacity
+          style={styles.statBtn}
+          onPress={() => router.push(`/post/${post.id}`)}
+        >
           <Feather name="message-circle" size={16} color={colors.mutedForeground} />
+          {commentCount !== undefined && (
+            <Text style={[styles.statCount, { color: colors.mutedForeground }]}>
+              {commentCount}
+            </Text>
+          )}
         </TouchableOpacity>
 
         {post.authorId !== currentUserId && onReport && (
@@ -189,17 +203,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 16,
   },
-  likeBtn: {
+  statBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
   },
-  likeCount: {
+  statCount: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-  },
-  commentBtn: {
-    padding: 2,
   },
   reportBtn: {
     marginLeft: "auto",
