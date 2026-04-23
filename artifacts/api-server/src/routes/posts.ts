@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc, sql, count } from "drizzle-orm";
-import { db, postsTable, usersTable, kindnessScoresTable } from "@workspace/db";
+import { db, postsTable, usersTable, commentsTable, kindnessScoresTable } from "@workspace/db";
 import { CreatePostBody, ListPostsQueryParams } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
 
@@ -46,6 +46,7 @@ router.get("/posts", requireAuth, async (req, res): Promise<void> => {
       content: postsTable.content,
       isHidden: postsTable.isHidden,
       likeCount: postsTable.likeCount,
+      commentCount: sql<number>`(select count(*) from ${commentsTable} where ${commentsTable.postId} = ${postsTable.id} and ${commentsTable.isHidden} = false)::int`,
       createdAt: postsTable.createdAt,
     })
     .from(postsTable)
@@ -119,6 +120,7 @@ router.post("/posts", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json({
     ...post,
     authorNickname: author?.nickname ?? user.nickname,
+    commentCount: 0,
   });
 });
 
@@ -141,6 +143,7 @@ router.get("/posts/:id", requireAuth, async (req, res): Promise<void> => {
       content: postsTable.content,
       isHidden: postsTable.isHidden,
       likeCount: postsTable.likeCount,
+      commentCount: sql<number>`(select count(*) from ${commentsTable} where ${commentsTable.postId} = ${postsTable.id} and ${commentsTable.isHidden} = false)::int`,
       createdAt: postsTable.createdAt,
     })
     .from(postsTable)
@@ -212,7 +215,12 @@ router.post("/posts/:id/like", requireAuth, async (req, res): Promise<void> => {
     .from(usersTable)
     .where(eq(usersTable.id, post.authorId));
 
-  res.json({ ...updatedPost, authorNickname: author?.nickname ?? "" });
+  const [{ commentCount }] = await db
+    .select({ commentCount: sql<number>`count(*)::int` })
+    .from(commentsTable)
+    .where(and(eq(commentsTable.postId, id), eq(commentsTable.isHidden, false)));
+
+  res.json({ ...updatedPost, authorNickname: author?.nickname ?? "", commentCount });
 });
 
 export default router;

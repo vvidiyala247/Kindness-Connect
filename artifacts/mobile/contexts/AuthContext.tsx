@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
-import { getMe } from "@workspace/api-client-react";
+import { getMe, register as apiRegister } from "@workspace/api-client-react";
+import type { RegisterBody } from "@workspace/api-client-react";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import type { UserProfile } from "@workspace/api-client-react";
@@ -13,6 +14,7 @@ interface AuthContextValue {
   user: UserProfile | null;
   isLoading: boolean;
   login: (token: string, user: UserProfile) => Promise<void>;
+  register: (body: RegisterBody) => Promise<{ token: string; user: UserProfile }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -64,6 +66,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
   }, []);
 
+  const register = useCallback(async (body: RegisterBody) => {
+    const result = await apiRegister(body);
+    await Promise.all([
+      AsyncStorage.setItem(TOKEN_KEY, result.token),
+      AsyncStorage.setItem(USER_KEY, JSON.stringify(result.user)),
+    ]);
+    setToken(result.token);
+    setUser(result.user);
+    return result;
+  }, []);
+
   const logout = useCallback(async () => {
     await Promise.all([
       AsyncStorage.removeItem(TOKEN_KEY),
@@ -84,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, user, isLoading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ token, user, isLoading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

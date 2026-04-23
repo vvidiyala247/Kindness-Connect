@@ -15,8 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useRegister } from "@workspace/api-client-react";
-import type { AuthResponse } from "@workspace/api-client-react";
+import type { UserProfile } from "@workspace/api-client-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -27,33 +26,19 @@ export default function RegisterScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { login } = useAuth();
+  const { register } = useAuth();
 
   const [step, setStep] = useState<Step>("form");
-  const [assignedResult, setAssignedResult] = useState<AuthResponse | null>(null);
+  const [assignedUser, setAssignedUser] = useState<UserProfile | null>(null);
 
   const [joinCode, setJoinCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [isPending, setIsPending] = useState(false);
 
-  const registerMutation = useRegister({
-    mutation: {
-      onSuccess: (data) => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setAssignedResult(data);
-        setStep("success");
-      },
-      onError: (err) => {
-        setErrorMsg(
-          (err as { data?: { error?: string } })?.data?.error ?? "Registration failed."
-        );
-      },
-    },
-  });
-
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setErrorMsg("");
     if (!joinCode.trim() || !password) {
       setErrorMsg("Please fill in all fields.");
@@ -67,16 +52,25 @@ export default function RegisterScreen() {
       setErrorMsg("Passwords don't match.");
       return;
     }
-    registerMutation.mutate({ data: { joinCode: joinCode.trim().toUpperCase(), password } });
+    setIsPending(true);
+    try {
+      const result = await register({ joinCode: joinCode.trim().toUpperCase(), password });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setAssignedUser(result.user);
+      setStep("success");
+    } catch (err: unknown) {
+      const e = err as { data?: { error?: string } };
+      setErrorMsg(e?.data?.error ?? "Registration failed.");
+    } finally {
+      setIsPending(false);
+    }
   };
 
-  const handleEnterApp = async () => {
-    if (!assignedResult) return;
-    await login(assignedResult.token, assignedResult.user);
+  const handleEnterApp = () => {
     router.replace("/(tabs)");
   };
 
-  if (step === "success" && assignedResult) {
+  if (step === "success" && assignedUser) {
     return (
       <View
         style={[
@@ -101,7 +95,7 @@ export default function RegisterScreen() {
 
         <View style={[styles.nicknameBadge, { backgroundColor: colors.kindness, borderRadius: colors.radius }]}>
           <Text style={[styles.nicknameText, { color: colors.kindnessForeground }]}>
-            {assignedResult.user.nickname}
+            {assignedUser.nickname}
           </Text>
         </View>
 
@@ -113,7 +107,7 @@ export default function RegisterScreen() {
         <View style={[styles.schoolInfo, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.schoolLabel, { color: colors.mutedForeground }]}>Your School ID</Text>
           <Text style={[styles.schoolId, { color: colors.foreground }]} numberOfLines={1}>
-            {assignedResult.user.schoolId}
+            {assignedUser.schoolId}
           </Text>
           <Text style={[styles.schoolNote, { color: colors.mutedForeground }]}>
             Save this — you'll need it to log in
@@ -235,12 +229,12 @@ export default function RegisterScreen() {
           <TouchableOpacity
             style={[
               styles.primaryBtn,
-              { backgroundColor: colors.primary, opacity: registerMutation.isPending ? 0.7 : 1 },
+              { backgroundColor: colors.primary, opacity: isPending ? 0.7 : 1 },
             ]}
             onPress={handleRegister}
-            disabled={registerMutation.isPending}
+            disabled={isPending}
           >
-            {registerMutation.isPending ? (
+            {isPending ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>

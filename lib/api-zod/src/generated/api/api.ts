@@ -106,6 +106,7 @@ export const ListPostsResponse = zod.object({
       content: zod.string().max(listPostsResponsePostsItemContentMax),
       isHidden: zod.boolean(),
       likeCount: zod.number(),
+      commentCount: zod.number(),
       createdAt: zod.coerce.date(),
     }),
   ),
@@ -142,6 +143,7 @@ export const GetPostResponse = zod.object({
   content: zod.string().max(getPostResponseContentMax),
   isHidden: zod.boolean(),
   likeCount: zod.number(),
+  commentCount: zod.number(),
   createdAt: zod.coerce.date(),
 });
 
@@ -163,6 +165,7 @@ export const LikePostResponse = zod.object({
   content: zod.string().max(likePostResponseContentMax),
   isHidden: zod.boolean(),
   likeCount: zod.number(),
+  commentCount: zod.number(),
   createdAt: zod.coerce.date(),
 });
 

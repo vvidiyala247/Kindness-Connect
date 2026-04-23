@@ -23,6 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useColors } from "@/hooks/useColors";
 import { EmptyState } from "@/components/EmptyState";
+import { useAuth } from "@/contexts/AuthContext";
 
 type StatusFilter = "pending" | "reviewed" | "actioned";
 
@@ -146,6 +147,7 @@ export default function AdminScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -172,6 +174,20 @@ export default function AdminScreen() {
       },
     });
   };
+
+  if (user?.role !== "admin") {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.center}>
+          <EmptyState
+            icon="lock"
+            title="Access restricted"
+            subtitle="This area is for school admins only"
+          />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

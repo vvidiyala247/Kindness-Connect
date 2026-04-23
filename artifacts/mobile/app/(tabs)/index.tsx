@@ -130,6 +130,7 @@ export default function FeedScreen() {
             <PostCard
               post={item}
               currentUserId={user?.id}
+              commentCount={item.commentCount}
               onReport={handleReportPost}
             />
           )}

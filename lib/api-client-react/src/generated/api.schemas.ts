@@ -78,6 +78,7 @@ export interface Post {
   content: string;
   isHidden: boolean;
   likeCount: number;
+  commentCount: number;
   createdAt: string;
 }
 
