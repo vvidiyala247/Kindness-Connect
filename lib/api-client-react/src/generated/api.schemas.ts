@@ -22,7 +22,7 @@ export interface RegisterBody {
 
 export interface LoginBody {
   nickname: string;
-  schoolId: string;
+  joinCode: string;
   password: string;
 }
 

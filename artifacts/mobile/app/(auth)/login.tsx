@@ -28,7 +28,7 @@ export default function LoginScreen() {
   const { login } = useAuth();
 
   const [nickname, setNickname] = useState("");
-  const [schoolId, setSchoolId] = useState("");
+  const [joinCode, setJoinCode] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -50,11 +50,11 @@ export default function LoginScreen() {
 
   const handleLogin = () => {
     setErrorMsg("");
-    if (!nickname.trim() || !schoolId.trim() || !password) {
+    if (!nickname.trim() || !joinCode.trim() || !password) {
       setErrorMsg("Please fill in all fields.");
       return;
     }
-    loginMutation.mutate({ data: { nickname: nickname.trim(), schoolId: schoolId.trim(), password } });
+    loginMutation.mutate({ data: { nickname: nickname.trim(), joinCode: joinCode.trim().toUpperCase(), password } });
   };
 
   return (
@@ -99,18 +99,19 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.mutedForeground }]}>School ID</Text>
+            <Text style={[styles.label, { color: colors.mutedForeground }]}>School Code</Text>
             <TextInput
               style={[
                 styles.input,
                 { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card },
               ]}
-              placeholder="sch_abc123..."
+              placeholder="ABC123"
               placeholderTextColor={colors.mutedForeground}
-              value={schoolId}
-              onChangeText={setSchoolId}
-              autoCapitalize="none"
+              value={joinCode}
+              onChangeText={(t) => setJoinCode(t.toUpperCase())}
+              autoCapitalize="characters"
               autoCorrect={false}
+              maxLength={6}
             />
           </View>
 

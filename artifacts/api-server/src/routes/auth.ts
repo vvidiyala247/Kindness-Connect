@@ -106,12 +106,22 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
-  const { nickname, schoolId, password } = parsed.data;
+  const { nickname, joinCode, password } = parsed.data;
+
+  const [school] = await db
+    .select({ id: schoolsTable.id })
+    .from(schoolsTable)
+    .where(and(eq(schoolsTable.joinCode, joinCode.toUpperCase()), eq(schoolsTable.isActive, true)));
+
+  if (!school) {
+    res.status(401).json({ error: "Invalid credentials" });
+    return;
+  }
 
   const [user] = await db
     .select()
     .from(usersTable)
-    .where(and(eq(usersTable.nickname, nickname), eq(usersTable.schoolId, schoolId)));
+    .where(and(eq(usersTable.nickname, nickname), eq(usersTable.schoolId, school.id)));
 
   if (!user) {
     res.status(401).json({ error: "Invalid credentials" });

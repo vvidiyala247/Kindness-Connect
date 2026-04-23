@@ -29,7 +29,7 @@ export const RegisterBody = zod.object({
  */
 export const LoginBody = zod.object({
   nickname: zod.string(),
-  schoolId: zod.string(),
+  joinCode: zod.string(),
   password: zod.string(),
 });
 

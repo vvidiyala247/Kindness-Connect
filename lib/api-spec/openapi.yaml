@@ -473,13 +473,13 @@ components:
       properties:
         nickname:
           type: string
-        schoolId:
+        joinCode:
           type: string
         password:
           type: string
       required:
         - nickname
-        - schoolId
+        - joinCode
         - password
 
     AuthResponse:
