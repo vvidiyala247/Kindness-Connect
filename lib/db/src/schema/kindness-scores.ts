@@ -11,8 +11,8 @@ export const scoreEventTypeEnum = [
 ] as const;
 export type ScoreEventType = (typeof scoreEventTypeEnum)[number];
 
-export const kindnessScoreEventsTable = pgTable(
-  "kindness_score_events",
+export const kindnessScoresTable = pgTable(
+  "kindness_scores",
   {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
     userId: text("user_id")
@@ -25,14 +25,14 @@ export const kindnessScoreEventsTable = pgTable(
   },
   (table) => [
     check(
-      "kindness_score_events_event_type_valid",
+      "kindness_scores_event_type_valid",
       sql`${table.eventType} IN ('post_kindness_act', 'received_like', 'received_comment')`,
     ),
-    check("kindness_score_events_points_positive", sql`${table.points} > 0`),
+    check("kindness_scores_points_positive", sql`${table.points} > 0`),
   ],
 );
 
-export const insertKindnessScoreEventSchema = createInsertSchema(kindnessScoreEventsTable).omit({
+export const insertKindnessScoreSchema = createInsertSchema(kindnessScoresTable).omit({
   id: true,
   createdAt: true,
 }).extend({
@@ -40,7 +40,7 @@ export const insertKindnessScoreEventSchema = createInsertSchema(kindnessScoreEv
   points: z.number().int().positive(),
 });
 
-export const selectKindnessScoreEventSchema = createSelectSchema(kindnessScoreEventsTable);
+export const selectKindnessScoreSchema = createSelectSchema(kindnessScoresTable);
 
-export type InsertKindnessScoreEvent = z.infer<typeof insertKindnessScoreEventSchema>;
-export type KindnessScoreEvent = typeof kindnessScoreEventsTable.$inferSelect;
+export type InsertKindnessScore = z.infer<typeof insertKindnessScoreSchema>;
+export type KindnessScore = typeof kindnessScoresTable.$inferSelect;

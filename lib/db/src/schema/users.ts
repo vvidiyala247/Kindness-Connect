@@ -24,6 +24,10 @@ export const usersTable = pgTable(
   (table) => [
     check("users_role_valid", sql`${table.role} IN ('student', 'admin')`),
     check("users_kindness_score_non_negative", sql`${table.kindnessScore} >= 0`),
+    check(
+      "users_nickname_format",
+      sql`${table.nickname} ~ '^[A-Z][a-z]+[A-Z][a-z]+$'`,
+    ),
   ],
 );
 
