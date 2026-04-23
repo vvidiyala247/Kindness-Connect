@@ -37,6 +37,7 @@ router.get("/admin/reports", requireAdmin, async (req, res): Promise<void> => {
 
 router.patch("/admin/reports/:id", requireAdmin, async (req, res): Promise<void> => {
   const reportId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const adminSchoolId = req.user!.schoolId;
 
   const parsed = UpdateAdminReportBody.safeParse(req.body);
   if (!parsed.success) {
@@ -46,15 +47,24 @@ router.patch("/admin/reports/:id", requireAdmin, async (req, res): Promise<void>
 
   const { status, hideContent, suspendUser } = parsed.data;
 
-  const [report] = await db
-    .select()
+  // Load report, then verify it belongs to the admin's school by checking reporter's schoolId
+  const [reportRow] = await db
+    .select({ report: reportsTable, reporterSchoolId: usersTable.schoolId })
     .from(reportsTable)
+    .innerJoin(usersTable, eq(reportsTable.reporterId, usersTable.id))
     .where(eq(reportsTable.id, reportId));
 
-  if (!report) {
+  if (!reportRow) {
     res.status(404).json({ error: "Report not found" });
     return;
   }
+
+  if (reportRow.reporterSchoolId !== adminSchoolId) {
+    res.status(404).json({ error: "Report not found" });
+    return;
+  }
+
+  const report = reportRow.report;
 
   await db.transaction(async (tx) => {
     await tx
@@ -67,12 +77,21 @@ router.patch("/admin/reports/:id", requireAdmin, async (req, res): Promise<void>
         await tx
           .update(postsTable)
           .set({ isHidden: true })
-          .where(eq(postsTable.id, report.targetId));
+          .where(and(eq(postsTable.id, report.targetId), eq(postsTable.schoolId, adminSchoolId)));
       } else if (report.targetType === "comment") {
-        await tx
-          .update(commentsTable)
-          .set({ isHidden: true })
-          .where(eq(commentsTable.id, report.targetId));
+        // Verify comment belongs to school via post join
+        const [commentRow] = await tx
+          .select({ comment: commentsTable })
+          .from(commentsTable)
+          .innerJoin(postsTable, eq(commentsTable.postId, postsTable.id))
+          .where(and(eq(commentsTable.id, report.targetId), eq(postsTable.schoolId, adminSchoolId)));
+
+        if (commentRow) {
+          await tx
+            .update(commentsTable)
+            .set({ isHidden: true })
+            .where(eq(commentsTable.id, report.targetId));
+        }
       }
     }
 
@@ -80,16 +99,17 @@ router.patch("/admin/reports/:id", requireAdmin, async (req, res): Promise<void>
       let authorId: string | null = null;
       if (report.targetType === "post") {
         const [post] = await tx
-          .select({ authorId: postsTable.authorId })
+          .select({ authorId: postsTable.authorId, schoolId: postsTable.schoolId })
           .from(postsTable)
-          .where(eq(postsTable.id, report.targetId));
+          .where(and(eq(postsTable.id, report.targetId), eq(postsTable.schoolId, adminSchoolId)));
         authorId = post?.authorId ?? null;
       } else if (report.targetType === "comment") {
-        const [comment] = await tx
+        const [commentRow] = await tx
           .select({ authorId: commentsTable.authorId })
           .from(commentsTable)
-          .where(eq(commentsTable.id, report.targetId));
-        authorId = comment?.authorId ?? null;
+          .innerJoin(postsTable, eq(commentsTable.postId, postsTable.id))
+          .where(and(eq(commentsTable.id, report.targetId), eq(postsTable.schoolId, adminSchoolId)));
+        authorId = commentRow?.authorId ?? null;
       }
 
       if (authorId) {

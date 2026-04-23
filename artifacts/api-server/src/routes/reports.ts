@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, reportsTable } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
+import { db, reportsTable, postsTable, commentsTable } from "@workspace/db";
 import { CreateReportBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
 
@@ -13,6 +14,31 @@ router.post("/reports", requireAuth, async (req, res): Promise<void> => {
   }
 
   const { targetType, targetId, reason } = parsed.data;
+  const schoolId = req.user!.schoolId;
+
+  // Validate the target exists and belongs to the reporter's school
+  if (targetType === "post") {
+    const [post] = await db
+      .select({ id: postsTable.id })
+      .from(postsTable)
+      .where(and(eq(postsTable.id, targetId), eq(postsTable.schoolId, schoolId)));
+
+    if (!post) {
+      res.status(404).json({ error: "Post not found" });
+      return;
+    }
+  } else if (targetType === "comment") {
+    const [commentRow] = await db
+      .select({ id: commentsTable.id })
+      .from(commentsTable)
+      .innerJoin(postsTable, eq(commentsTable.postId, postsTable.id))
+      .where(and(eq(commentsTable.id, targetId), eq(postsTable.schoolId, schoolId)));
+
+    if (!commentRow) {
+      res.status(404).json({ error: "Comment not found" });
+      return;
+    }
+  }
 
   const [report] = await db
     .insert(reportsTable)
