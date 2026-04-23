@@ -34,19 +34,47 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     .where(eq(usersTable.schoolId, school.id));
 
   const existingNicknames = new Set(existingUsers.map((u) => u.nickname));
-  const nickname = await generateUniqueNickname(existingNicknames);
+  const nickname = generateUniqueNickname(existingNicknames);
+  if (nickname === null) {
+    res.status(503).json({ error: "Nickname pool exhausted for this school. Please contact your administrator." });
+    return;
+  }
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  const [user] = await db
-    .insert(usersTable)
-    .values({
-      schoolId: school.id,
-      nickname,
-      passwordHash,
-      role: "student",
-    })
-    .returning();
+  // Insert with retry on unique constraint violation (race condition between concurrent registrations)
+  let user: typeof usersTable.$inferSelect;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const nicknameToTry = attempt === 0 ? nickname : (generateUniqueNickname(existingNicknames) ?? nickname);
+    try {
+      const rows = await db
+        .insert(usersTable)
+        .values({
+          schoolId: school.id,
+          nickname: nicknameToTry,
+          passwordHash,
+          role: "student",
+        })
+        .returning();
+      user = rows[0];
+      break;
+    } catch (err: unknown) {
+      const isUniqueViolation =
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        (err as { code: string }).code === "23505";
+      if (isUniqueViolation && attempt < 2) {
+        existingNicknames.add(nicknameToTry);
+        continue;
+      }
+      throw err;
+    }
+  }
+  if (!user!) {
+    res.status(503).json({ error: "Could not assign a unique nickname. Please try again." });
+    return;
+  }
 
   const token = signToken({
     userId: user.id,

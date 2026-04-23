@@ -12,10 +12,15 @@ router.get("/posts/:id/comments", requireAuth, async (req, res): Promise<void> =
   const postId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const schoolId = req.user!.schoolId;
 
+  const postConditions = [eq(postsTable.id, postId), eq(postsTable.schoolId, schoolId)];
+  if (req.user!.role !== "admin") {
+    postConditions.push(eq(postsTable.isHidden, false));
+  }
+
   const [post] = await db
     .select({ id: postsTable.id })
     .from(postsTable)
-    .where(and(eq(postsTable.id, postId), eq(postsTable.schoolId, schoolId)));
+    .where(and(...postConditions));
 
   if (!post) {
     res.status(404).json({ error: "Post not found" });

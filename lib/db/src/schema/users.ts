@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, integer, timestamp, check } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, integer, timestamp, check, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -22,6 +22,7 @@ export const usersTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    uniqueIndex("users_school_nickname_unique").on(table.schoolId, table.nickname),
     check("users_role_valid", sql`${table.role} IN ('student', 'admin')`),
     check("users_kindness_score_non_negative", sql`${table.kindnessScore} >= 0`),
     check(

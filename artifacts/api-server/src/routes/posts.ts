@@ -124,7 +124,12 @@ router.post("/posts", requireAuth, async (req, res): Promise<void> => {
 
 router.get("/posts/:id", requireAuth, async (req, res): Promise<void> => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const schoolId = req.user!.schoolId;
+  const { schoolId, role } = req.user!;
+
+  const conditions = [eq(postsTable.id, id), eq(postsTable.schoolId, schoolId)];
+  if (role !== "admin") {
+    conditions.push(eq(postsTable.isHidden, false));
+  }
 
   const [post] = await db
     .select({
@@ -140,7 +145,7 @@ router.get("/posts/:id", requireAuth, async (req, res): Promise<void> => {
     })
     .from(postsTable)
     .innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
-    .where(and(eq(postsTable.id, id), eq(postsTable.schoolId, schoolId)));
+    .where(and(...conditions));
 
   if (!post) {
     res.status(404).json({ error: "Post not found" });
