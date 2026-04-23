@@ -31,6 +31,7 @@ export default function RegisterScreen() {
   const [step, setStep] = useState<Step>("form");
   const [assignedUser, setAssignedUser] = useState<UserProfile | null>(null);
   const [assignedToken, setAssignedToken] = useState<string | null>(null);
+  const [usedJoinCode, setUsedJoinCode] = useState("");
 
   const [joinCode, setJoinCode] = useState("");
   const [password, setPassword] = useState("");
@@ -55,10 +56,12 @@ export default function RegisterScreen() {
     }
     setIsPending(true);
     try {
-      const result = await register({ joinCode: joinCode.trim().toUpperCase(), password });
+      const code = joinCode.trim().toUpperCase();
+      const result = await register({ joinCode: code, password });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setAssignedUser(result.user);
       setAssignedToken(result.token);
+      setUsedJoinCode(code);
       setStep("success");
     } catch (err: unknown) {
       const e = err as { data?: { error?: string } };
@@ -109,12 +112,15 @@ export default function RegisterScreen() {
         </Text>
 
         <View style={[styles.schoolInfo, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.schoolLabel, { color: colors.mutedForeground }]}>Your School ID</Text>
-          <Text style={[styles.schoolId, { color: colors.foreground }]} numberOfLines={1}>
-            {assignedUser.schoolId}
+          <Text style={[styles.schoolLabel, { color: colors.mutedForeground }]}>To log in next time</Text>
+          <Text style={[styles.schoolId, { color: colors.foreground }]}>
+            Nickname: {assignedUser.nickname}
+          </Text>
+          <Text style={[styles.schoolId, { color: colors.foreground }]}>
+            School code: {usedJoinCode}
           </Text>
           <Text style={[styles.schoolNote, { color: colors.mutedForeground }]}>
-            Save this — you'll need it to log in
+            Write these down — you'll use them with your password to sign in
           </Text>
         </View>
 
