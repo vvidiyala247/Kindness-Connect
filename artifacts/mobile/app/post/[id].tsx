@@ -26,6 +26,8 @@ import type { Comment } from "@workspace/api-client-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { MicButton } from "@/components/MicButton";
 import { CommentItem } from "@/components/CommentItem";
 import { ReportModal } from "@/components/ReportModal";
 import { EmptyState } from "@/components/EmptyState";
@@ -42,6 +44,11 @@ export default function PostDetailScreen() {
 
   const [commentText, setCommentText] = useState("");
   const [reportTarget, setReportTarget] = useState<{ type: "post" | "comment"; id: string } | null>(null);
+
+  const voice = useVoiceInput({
+    onFinalTranscript: (text) =>
+      setCommentText((prev) => (prev ? prev + " " + text : text)),
+  });
 
   const { data: post, isLoading: postLoading } = useGetPost(id ?? "");
   const { data: comments = [], isLoading: commentsLoading } = useListComments(id ?? "");
@@ -173,16 +180,27 @@ export default function PostDetailScreen() {
         <TextInput
           style={[
             styles.commentInput,
-            { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground },
+            {
+              borderColor: voice.isListening ? "#EF4444" : colors.border,
+              backgroundColor: colors.card,
+              color: colors.foreground,
+            },
           ]}
-          placeholder="Add a kind comment..."
-          placeholderTextColor={colors.mutedForeground}
+          placeholder={voice.isListening ? "Listening…" : "Add a kind comment…"}
+          placeholderTextColor={voice.isListening ? "#EF4444" : colors.mutedForeground}
           value={commentText}
           onChangeText={setCommentText}
           maxLength={MAX_COMMENT}
           multiline
           returnKeyType="send"
           testID="comment-input"
+        />
+        <MicButton
+          isListening={voice.isListening}
+          isSupported={voice.isSupported}
+          interimTranscript={voice.interimTranscript}
+          onPress={voice.toggle}
+          variant="inline"
         />
         <TouchableOpacity
           style={[

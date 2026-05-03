@@ -20,6 +20,8 @@ import { useCreatePost, getListPostsQueryKey } from "@workspace/api-client-react
 import type { CreatePostBody } from "@workspace/api-client-react";
 
 import { useColors } from "@/hooks/useColors";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { MicButton } from "@/components/MicButton";
 
 type PostType = CreatePostBody["type"];
 
@@ -49,6 +51,11 @@ export default function NewPostScreen() {
   const [postType, setPostType] = useState<PostType>("kindness_act");
   const [content, setContent] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+  const voice = useVoiceInput({
+    onFinalTranscript: (text) =>
+      setContent((prev) => (prev ? prev + " " + text : text)),
+  });
 
   const createPostMutation = useCreatePost({
     mutation: {
@@ -163,7 +170,7 @@ export default function NewPostScreen() {
             style={[
               styles.textarea,
               {
-                borderColor: colors.border,
+                borderColor: voice.isListening ? "#EF4444" : colors.border,
                 backgroundColor: colors.card,
                 color: colors.foreground,
               },
@@ -179,6 +186,14 @@ export default function NewPostScreen() {
             multiline
             maxLength={MAX_CHARS}
             textAlignVertical="top"
+          />
+
+          <MicButton
+            isListening={voice.isListening}
+            isSupported={voice.isSupported}
+            interimTranscript={voice.interimTranscript}
+            onPress={voice.toggle}
+            variant="block"
           />
         </View>
 
