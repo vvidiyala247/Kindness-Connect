@@ -1,5 +1,8 @@
 # KindnessConnect
 
+<!-- CI badge: replace OWNER/REPO with your GitHub repository path once pushed -->
+<!-- [![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml) -->
+
 ## App Purpose
 
 KindnessConnect is a school-safe, mobile-first social platform for students to share anonymous support messages and kindness acts within their school community. Students join via a school-specific join code and receive a randomly generated anonymous nickname (e.g. "BraveOtter"). They can post support messages, log acts of kindness, comment on posts, and earn a kindness score. School administrators can moderate content through a reporting and moderation dashboard.
