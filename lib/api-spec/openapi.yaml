@@ -101,6 +101,25 @@ paths:
                 $ref: "#/components/schemas/UserProfile"
         "401":
           $ref: "#/components/responses/Unauthorized"
+    patch:
+      operationId: updateMe
+      tags: [auth]
+      summary: Update current user profile (e.g. avatar)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeBody"
+      responses:
+        "200":
+          description: Updated user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /schools:
     get:
@@ -523,6 +542,9 @@ components:
           type: integer
         isSuspended:
           type: boolean
+        avatar:
+          type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -534,6 +556,15 @@ components:
         - kindnessScore
         - isSuspended
         - createdAt
+
+    UpdateMeBody:
+      type: object
+      properties:
+        avatar:
+          type: string
+          nullable: true
+      required:
+        - avatar
 
     School:
       type: object

@@ -19,6 +19,7 @@ export const usersTable = pgTable(
     role: text("role").$type<UserRole>().notNull().default("student"),
     kindnessScore: integer("kindness_score").notNull().default(0),
     isSuspended: boolean("is_suspended").notNull().default(false),
+    avatar: text("avatar"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

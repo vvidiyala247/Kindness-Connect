@@ -2,12 +2,25 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { eq, and } from "drizzle-orm";
 import { db, schoolsTable, usersTable } from "@workspace/db";
-import { RegisterBody, LoginBody } from "@workspace/api-zod";
+import { RegisterBody, LoginBody, UpdateMeBody } from "@workspace/api-zod";
 import { signToken } from "../lib/jwt";
 import { generateUniqueNickname } from "../lib/nicknames";
 import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
+
+function safeUser(user: typeof usersTable.$inferSelect) {
+  return {
+    id: user.id,
+    schoolId: user.schoolId,
+    nickname: user.nickname,
+    role: user.role,
+    kindnessScore: user.kindnessScore,
+    isSuspended: user.isSuspended,
+    avatar: user.avatar ?? null,
+    createdAt: user.createdAt,
+  };
+}
 
 router.post("/auth/register", async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
@@ -42,7 +55,6 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  // Insert with retry on unique constraint violation (race condition between concurrent registrations)
   let user: typeof usersTable.$inferSelect;
   for (let attempt = 0; attempt < 3; attempt++) {
     const nicknameToTry = attempt === 0 ? nickname : (generateUniqueNickname(existingNicknames) ?? nickname);
@@ -84,19 +96,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   });
 
   req.log.info({ userId: user.id, schoolId: school.id }, "User registered");
-
-  res.status(201).json({
-    token,
-    user: {
-      id: user.id,
-      schoolId: user.schoolId,
-      nickname: user.nickname,
-      role: user.role,
-      kindnessScore: user.kindnessScore,
-      isSuspended: user.isSuspended,
-      createdAt: user.createdAt,
-    },
-  });
+  res.status(201).json({ token, user: safeUser(user) });
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {
@@ -142,19 +142,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   });
 
   req.log.info({ userId: user.id }, "User logged in");
-
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      schoolId: user.schoolId,
-      nickname: user.nickname,
-      role: user.role,
-      kindnessScore: user.kindnessScore,
-      isSuspended: user.isSuspended,
-      createdAt: user.createdAt,
-    },
-  });
+  res.json({ token, user: safeUser(user) });
 });
 
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
@@ -168,15 +156,29 @@ router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  res.json({
-    id: user.id,
-    schoolId: user.schoolId,
-    nickname: user.nickname,
-    role: user.role,
-    kindnessScore: user.kindnessScore,
-    isSuspended: user.isSuspended,
-    createdAt: user.createdAt,
-  });
+  res.json(safeUser(user));
+});
+
+router.patch("/auth/me", requireAuth, async (req, res): Promise<void> => {
+  const parsed = UpdateMeBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [user] = await db
+    .update(usersTable)
+    .set({ avatar: parsed.data.avatar })
+    .where(eq(usersTable.id, req.user!.userId))
+    .returning();
+
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  req.log.info({ userId: user.id }, "User updated avatar");
+  res.json(safeUser(user));
 });
 
 export default router;

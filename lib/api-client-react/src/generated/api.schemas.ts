@@ -41,12 +41,17 @@ export interface UserProfile {
   role: UserProfileRole;
   kindnessScore: number;
   isSuspended: boolean;
+  avatar?: string | null;
   createdAt: string;
 }
 
 export interface AuthResponse {
   token: string;
   user: UserProfile;
+}
+
+export interface UpdateMeBody {
+  avatar: string | null;
 }
 
 export interface School {

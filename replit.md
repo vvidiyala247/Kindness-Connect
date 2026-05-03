@@ -96,6 +96,7 @@ All tables are in PostgreSQL managed by Drizzle ORM.
 - Errors use structured JSON: `{ error: string, code?: string }`
 
 ### Mobile App
+- **Startup shim**: `artifacts/mobile/scripts/start.js` binds port 18115 instantly (health-check passes in <1 s), then starts Metro on port 18116 and transparently proxies HTTP + WebSocket once Metro is ready. This is required because Replit's health-check fires before Metro can compile its first bundle.
 - Expo Router for file-based navigation
 - AuthContext wraps the app and exposes `user`, `token`, `login`, `logout`, `refreshUser`
   - On app boot: restores JWT from AsyncStorage, then fetches `/api/auth/me` to hydrate current user (including role)
@@ -108,7 +109,7 @@ All tables are in PostgreSQL managed by Drizzle ORM.
   - `(auth)/register` — join code + password, shows assigned nickname on success
   - `(tabs)/index` — feed with filter chips (All/Support/Kindness)
   - `(tabs)/new-post` — create post (support or kindness act)
-  - `(tabs)/profile` — user profile, kindness score, milestone rank, own posts list
+  - `(tabs)/profile` — user profile, kindness score, milestone rank, own posts list, avatar picker (36 emoji via PATCH /api/auth/me)
   - `(tabs)/admin` — moderation dashboard (admin-role-gated, hidden from students)
   - `post/[id]` — post detail with comments + comment input
 - Components: PostCard, CommentItem, KindnessScore, ReportModal, EmptyState

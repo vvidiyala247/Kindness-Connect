@@ -42,6 +42,7 @@ export const LoginResponse = zod.object({
     role: zod.enum(["student", "admin"]),
     kindnessScore: zod.number(),
     isSuspended: zod.boolean(),
+    avatar: zod.string().nullish(),
     createdAt: zod.coerce.date(),
   }),
 });
@@ -56,6 +57,25 @@ export const GetMeResponse = zod.object({
   role: zod.enum(["student", "admin"]),
   kindnessScore: zod.number(),
   isSuspended: zod.boolean(),
+  avatar: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Update current user profile (e.g. avatar)
+ */
+export const UpdateMeBody = zod.object({
+  avatar: zod.string().nullable(),
+});
+
+export const UpdateMeResponse = zod.object({
+  id: zod.string(),
+  schoolId: zod.string(),
+  nickname: zod.string(),
+  role: zod.enum(["student", "admin"]),
+  kindnessScore: zod.number(),
+  isSuspended: zod.boolean(),
+  avatar: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 
@@ -284,6 +304,7 @@ export const ListAdminUsersResponseItem = zod.object({
   role: zod.enum(["student", "admin"]),
   kindnessScore: zod.number(),
   isSuspended: zod.boolean(),
+  avatar: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem);
