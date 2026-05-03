@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import type { Post } from "@workspace/api-client-react";
-import { useLikePost } from "@workspace/api-client-react";
+import { useLikePost, useGiftPost } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListPostsQueryKey } from "@workspace/api-client-react";
 
@@ -35,6 +35,7 @@ export function PostCard({ post, currentUserId, commentCount, onReport }: PostCa
   const queryClient = useQueryClient();
   const [liked, setLiked] = useState(false);
   const [localLikes, setLocalLikes] = useState(post.likeCount);
+  const [gifted, setGifted] = useState(false);
 
   const likeMutation = useLikePost({
     mutation: {
@@ -50,6 +51,22 @@ export function PostCard({ post, currentUserId, commentCount, onReport }: PostCa
       },
     },
   });
+
+  const giftMutation = useGiftPost({
+    mutation: {
+      onSuccess: () => {
+        setGifted(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setTimeout(() => setGifted(false), 2500);
+      },
+    },
+  });
+
+  const handleGift = () => {
+    if (giftMutation.isPending || gifted) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    giftMutation.mutate({ id: post.id });
+  };
 
   const handleLike = () => {
     if (likeMutation.isPending) return;
@@ -129,6 +146,28 @@ export function PostCard({ post, currentUserId, commentCount, onReport }: PostCa
             </Text>
           )}
         </TouchableOpacity>
+
+        {post.authorId !== currentUserId && (
+          <TouchableOpacity
+            style={styles.statBtn}
+            onPress={handleGift}
+            disabled={giftMutation.isPending}
+            accessibilityLabel="Send kindness gift"
+          >
+            {giftMutation.isPending ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <Feather
+                name="gift"
+                size={16}
+                color={gifted ? colors.accent : colors.mutedForeground}
+              />
+            )}
+            {gifted && (
+              <Text style={[styles.statCount, { color: colors.accent }]}>Sent!</Text>
+            )}
+          </TouchableOpacity>
+        )}
 
         {post.authorId !== currentUserId && onReport && (
           <TouchableOpacity

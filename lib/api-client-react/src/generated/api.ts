@@ -25,6 +25,7 @@ import type {
   CreateReportBody,
   CreateSchoolBody,
   ForbiddenResponse,
+  GiftResponse,
   HealthStatus,
   ListAdminReportsParams,
   ListPostsParams,
@@ -1131,6 +1132,105 @@ export const useLikePost = <
   TContext
 > => {
   return useMutation(getLikePostMutationOptions(options));
+};
+
+/**
+ * @summary Send a 5-point kindness gift to the post author (max 5 gifts per day)
+ */
+export const getGiftPostUrl = (id: string) => {
+  return `/api/posts/${id}/gift`;
+};
+
+export const giftPost = async (
+  id: string,
+  options?: RequestInit,
+): Promise<GiftResponse> => {
+  return customFetch<GiftResponse>(getGiftPostUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getGiftPostMutationOptions = <
+  TError = ErrorType<
+    | BadRequestResponse
+    | UnauthorizedResponse
+    | ForbiddenResponse
+    | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof giftPost>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof giftPost>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["giftPost"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof giftPost>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return giftPost(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GiftPostMutationResult = NonNullable<
+  Awaited<ReturnType<typeof giftPost>>
+>;
+
+export type GiftPostMutationError = ErrorType<
+  | BadRequestResponse
+  | UnauthorizedResponse
+  | ForbiddenResponse
+  | NotFoundResponse
+>;
+
+/**
+ * @summary Send a 5-point kindness gift to the post author (max 5 gifts per day)
+ */
+export const useGiftPost = <
+  TError = ErrorType<
+    | BadRequestResponse
+    | UnauthorizedResponse
+    | ForbiddenResponse
+    | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof giftPost>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof giftPost>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getGiftPostMutationOptions(options));
 };
 
 /**

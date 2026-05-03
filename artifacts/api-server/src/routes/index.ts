@@ -7,6 +7,7 @@ import commentsRouter from "./comments";
 import reportsRouter from "./reports";
 import adminRouter from "./admin";
 import notificationsRouter from "./notifications";
+import giftsRouter from "./gifts";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(commentsRouter);
 router.use(reportsRouter);
 router.use(adminRouter);
 router.use(notificationsRouter);
+router.use(giftsRouter);
 
 export default router;

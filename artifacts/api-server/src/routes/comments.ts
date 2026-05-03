@@ -3,6 +3,7 @@ import { eq, and, asc, sql } from "drizzle-orm";
 import { db, commentsTable, postsTable, usersTable, kindnessScoresTable } from "@workspace/db";
 import { CreateCommentBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
+import { sendPushNotification } from "../lib/notifications";
 
 const router: IRouter = Router();
 
@@ -73,7 +74,7 @@ router.post("/posts/:id/comments", requireAuth, async (req, res): Promise<void> 
   }
 
   const [post] = await db
-    .select({ id: postsTable.id, authorId: postsTable.authorId, schoolId: postsTable.schoolId })
+    .select({ id: postsTable.id, authorId: postsTable.authorId, schoolId: postsTable.schoolId, type: postsTable.type })
     .from(postsTable)
     .where(and(eq(postsTable.id, postId), eq(postsTable.schoolId, user.schoolId), eq(postsTable.isHidden, false)));
 
@@ -113,6 +114,25 @@ router.post("/posts/:id/comments", requireAuth, async (req, res): Promise<void> 
     ...comment,
     authorNickname: author?.nickname ?? user.nickname,
   });
+
+  // Thank-you reminder: notify support-post author when someone responds
+  if (post.type === "support" && post.authorId !== user.userId) {
+    const [postAuthor] = await db
+      .select({ pushToken: usersTable.pushToken })
+      .from(usersTable)
+      .where(eq(usersTable.id, post.authorId));
+
+    if (postAuthor?.pushToken) {
+      void sendPushNotification([
+        {
+          to: postAuthor.pushToken,
+          title: "Someone reached out to you! 💛",
+          body: "A kind soul responded to your support request. Open the app to read it and consider saying thank you.",
+          sound: "default",
+        },
+      ]);
+    }
+  }
 });
 
 export default router;

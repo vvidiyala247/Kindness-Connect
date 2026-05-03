@@ -222,6 +222,19 @@ export const LikePostResponse = zod.object({
 });
 
 /**
+ * @summary Send a 5-point kindness gift to the post author (max 5 gifts per day)
+ */
+export const GiftPostParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const GiftPostResponse = zod.object({
+  giftsRemainingToday: zod
+    .number()
+    .describe("How many gifts the sender can still give today (starts at 5)"),
+});
+
+/**
  * @summary List comments on a post
  */
 export const ListCommentsParams = zod.object({

@@ -8,6 +8,7 @@ export const scoreEventTypeEnum = [
   "post_kindness_act",
   "received_like",
   "received_comment",
+  "received_gift",
 ] as const;
 export type ScoreEventType = (typeof scoreEventTypeEnum)[number];
 
@@ -26,7 +27,7 @@ export const kindnessScoresTable = pgTable(
   (table) => [
     check(
       "kindness_scores_event_type_valid",
-      sql`${table.eventType} IN ('post_kindness_act', 'received_like', 'received_comment')`,
+      sql`${table.eventType} IN ('post_kindness_act', 'received_like', 'received_comment', 'received_gift')`,
     ),
     check("kindness_scores_points_positive", sql`${table.points} > 0`),
   ],
@@ -36,7 +37,7 @@ export const insertKindnessScoreSchema = createInsertSchema(kindnessScoresTable)
   id: true,
   createdAt: true,
 }).extend({
-  eventType: z.enum(["post_kindness_act", "received_like", "received_comment"]),
+  eventType: z.enum(["post_kindness_act", "received_like", "received_comment", "received_gift"]),
   points: z.number().int().positive(),
 });
 

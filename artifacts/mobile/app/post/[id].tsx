@@ -103,6 +103,21 @@ export default function PostDetailScreen() {
           <Text style={[styles.statText, { color: colors.mutedForeground }]}>{comments.length}</Text>
         </View>
       </View>
+
+      {isSupport && post.authorId === user?.id && comments.length > 0 && (
+        <TouchableOpacity
+          style={[styles.thanksBanner, { backgroundColor: typeColor + "18", borderColor: typeColor + "33" }]}
+          onPress={() =>
+            setCommentText("Thank you so much for your kind words and support! It truly means the world to me. 💛")
+          }
+        >
+          <Feather name="heart" size={14} color={typeColor} />
+          <Text style={[styles.thanksBannerText, { color: typeColor }]}>
+            Tap to thank your supporters 💛
+          </Text>
+        </TouchableOpacity>
+      )}
+
       <View style={[styles.commentsLabel, { borderTopColor: colors.border }]}>
         <Text style={[styles.commentsLabelText, { color: colors.mutedForeground }]}>
           {comments.length} {comments.length === 1 ? "Comment" : "Comments"}
@@ -306,6 +321,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_500Medium",
     marginRight: 4,
+  },
+  thanksBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  thanksBannerText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    flex: 1,
   },
   commentsLabel: {
     borderTopWidth: StyleSheet.hairlineWidth,

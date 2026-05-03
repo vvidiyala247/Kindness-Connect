@@ -299,6 +299,33 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /posts/{id}/gift:
+    post:
+      operationId: giftPost
+      tags: [posts]
+      summary: Send a 5-point kindness gift to the post author (max 5 gifts per day)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Gift sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiftResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /posts/{id}/comments:
     get:
       operationId: listComments
@@ -805,6 +832,15 @@ components:
         - targetType
         - targetId
         - reason
+
+    GiftResponse:
+      type: object
+      properties:
+        giftsRemainingToday:
+          type: integer
+          description: How many gifts the sender can still give today (starts at 5)
+      required:
+        - giftsRemainingToday
 
     RegisterPushTokenBody:
       type: object

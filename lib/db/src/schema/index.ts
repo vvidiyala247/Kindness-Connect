@@ -4,3 +4,4 @@ export * from "./posts";
 export * from "./comments";
 export * from "./reports";
 export * from "./kindness-scores";
+export * from "./gifts";

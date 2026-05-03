@@ -193,6 +193,11 @@ export interface CreateReportBody {
   reason: CreateReportBodyReason;
 }
 
+export interface GiftResponse {
+  /** How many gifts the sender can still give today (starts at 5) */
+  giftsRemainingToday: number;
+}
+
 export interface RegisterPushTokenBody {
   /**
    * Expo push token (e.g. ExponentPushToken[xxxx])
