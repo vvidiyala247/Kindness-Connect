@@ -26,6 +26,7 @@ import { useColors } from "@/hooks/useColors";
 import { PostCard } from "@/components/PostCard";
 import { EmptyState } from "@/components/EmptyState";
 import { ReportModal } from "@/components/ReportModal";
+import { DailyPromptBanner } from "@/components/DailyPromptBanner";
 
 type FilterType = "all" | "support" | "kindness_act";
 
@@ -181,6 +182,7 @@ export default function FeedScreen() {
         <FlatList
           data={posts}
           keyExtractor={(item) => item.id}
+          ListHeaderComponent={<DailyPromptBanner />}
           renderItem={({ item }) => (
             <PostCard
               post={item}

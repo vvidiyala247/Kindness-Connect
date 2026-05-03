@@ -22,6 +22,7 @@ import type { CreatePostBody } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { MicButton } from "@/components/MicButton";
+import { MessageStarters } from "@/components/MessageStarters";
 
 type PostType = CreatePostBody["type"];
 
@@ -152,6 +153,11 @@ export default function NewPostScreen() {
         </View>
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+        <MessageStarters
+          postType={postType}
+          onSelect={(text) => setContent(text)}
+        />
 
         <View style={styles.textareaSection}>
           <View style={styles.textareaHeader}>
