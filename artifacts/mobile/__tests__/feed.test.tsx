@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { renderWithProviders } from "./test-utils";
 import { apiMock } from "./mocks/api-mock";
 import FeedScreen from "../app/(tabs)/index";
+import { FeedBadgeContext } from "../contexts/FeedBadgeContext";
 
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
 
@@ -119,4 +120,5 @@ describe("FeedScreen", () => {
       expect(apiMock.lastRequest?.url).not.toContain("type=");
     });
   });
+
 });

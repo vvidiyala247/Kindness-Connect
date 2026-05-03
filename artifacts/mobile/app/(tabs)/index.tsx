@@ -1,8 +1,11 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useFocusEffect } from "expo-router";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   ActivityIndicator,
+  AppState,
+  AppStateStatus,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -18,6 +21,7 @@ import type { Post, ListPostsParams } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useFeedBadge } from "@/contexts/FeedBadgeContext";
 import { useColors } from "@/hooks/useColors";
 import { PostCard } from "@/components/PostCard";
 import { EmptyState } from "@/components/EmptyState";
@@ -31,15 +35,27 @@ const FILTERS: { key: FilterType; label: string }[] = [
   { key: "kindness_act", label: "Kindness" },
 ];
 
+const POLL_INTERVAL_MS = 30_000;
+
 export default function FeedScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { markFeedSeen, updateBadge } = useFeedBadge();
 
   const [filter, setFilter] = useState<FilterType>("all");
   const [reportTarget, setReportTarget] = useState<{ type: "post" | "comment"; id: string } | null>(null);
+  const [appIsActive, setAppIsActive] = useState(AppState.currentState === "active");
+  const isFocused = useRef(true);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (nextState: AppStateStatus) => {
+      setAppIsActive(nextState === "active");
+    });
+    return () => sub.remove();
+  }, []);
 
   const params: ListPostsParams = {
     page: 1,
@@ -47,15 +63,54 @@ export default function FeedScreen() {
     ...(filter !== "all" ? { type: filter } : {}),
   };
 
-  const { data, isLoading, isError, refetch, isRefetching } = useListPosts(params);
+  const { data, isLoading, isError, refetch, isRefetching } = useListPosts(params, {
+    query: {
+      queryKey: getListPostsQueryKey(params),
+      refetchInterval: appIsActive ? POLL_INTERVAL_MS : false,
+      refetchIntervalInBackground: false,
+    },
+  });
+
+  const posts = data?.posts ?? [];
+
+  useEffect(() => {
+    if (!posts.length) return;
+    if (isFocused.current) {
+      markFeedSeen(posts[0].id);
+    } else {
+      updateBadge(posts);
+    }
+  }, [posts]);
+
+  useFocusEffect(
+    useCallback(() => {
+      isFocused.current = true;
+      if (posts.length > 0) {
+        markFeedSeen(posts[0].id);
+      } else {
+        markFeedSeen(null);
+      }
+      return () => {
+        isFocused.current = false;
+      };
+    }, [posts, markFeedSeen])
+  );
+
+  const handlePullRefresh = useCallback(async () => {
+    const result = await refetch();
+    const latestPosts = result.data?.posts ?? [];
+    if (latestPosts.length > 0) {
+      markFeedSeen(latestPosts[0].id);
+    } else {
+      markFeedSeen(null);
+    }
+  }, [refetch, markFeedSeen]);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const handleReportPost = (post: Post) => {
     setReportTarget({ type: "post", id: post.id });
   };
-
-  const posts = data?.posts ?? [];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -143,8 +198,9 @@ export default function FeedScreen() {
           refreshControl={
             <RefreshControl
               refreshing={!!isRefetching}
-              onRefresh={refetch}
+              onRefresh={handlePullRefresh}
               tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
           scrollEnabled={!!posts.length}

@@ -17,6 +17,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { FeedBadgeProvider } from "@/contexts/FeedBadgeContext";
 
 setBaseUrl(
   process.env.EXPO_PUBLIC_API_URL ||
@@ -83,7 +84,9 @@ export default function RootLayout() {
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
               <AuthProvider>
-                <RootLayoutNav />
+                <FeedBadgeProvider>
+                  <RootLayoutNav />
+                </FeedBadgeProvider>
               </AuthProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>

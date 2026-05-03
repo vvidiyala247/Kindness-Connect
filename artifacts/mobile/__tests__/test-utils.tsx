@@ -2,6 +2,7 @@ import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import { AuthContext } from "@/contexts/AuthContext";
+import { FeedBadgeProvider } from "@/contexts/FeedBadgeContext";
 import type { UserProfile } from "@workspace/api-client-react";
 
 export const mockUser: UserProfile = {
@@ -10,6 +11,8 @@ export const mockUser: UserProfile = {
   schoolId: "school-1",
   role: "student",
   kindnessScore: 10,
+  isSuspended: false,
+  createdAt: "2024-01-01T00:00:00.000Z",
 };
 
 export const defaultAuthValue = {
@@ -38,7 +41,9 @@ export function renderWithProviders(
   const queryClient = createTestQueryClient();
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <AuthContext.Provider value={authValue}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <FeedBadgeProvider>{children}</FeedBadgeProvider>
+      </QueryClientProvider>
     </AuthContext.Provider>
   );
   return render(ui, { wrapper: Wrapper });
