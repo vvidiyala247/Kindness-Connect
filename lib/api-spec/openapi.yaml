@@ -438,6 +438,39 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /admin/users/{id}:
+    patch:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Warn, suspend, or reinstate a user (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAdminUserBody"
+      responses:
+        "200":
+          description: Updated user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -540,6 +573,9 @@ components:
           enum: [student, admin]
         kindnessScore:
           type: integer
+        warningCount:
+          type: integer
+          description: Number of warnings issued to this user (auto-suspends at 3)
         isSuspended:
           type: boolean
         avatar:
@@ -554,6 +590,7 @@ components:
         - nickname
         - role
         - kindnessScore
+        - warningCount
         - isSuspended
         - createdAt
 
@@ -749,6 +786,16 @@ components:
         - targetType
         - targetId
         - reason
+
+    UpdateAdminUserBody:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [warn, suspend, reinstate]
+          description: warn increments warning count (auto-suspends at 3), suspend blocks immediately, reinstate lifts suspension and resets warnings
+      required:
+        - action
 
     UpdateReportBody:
       type: object

@@ -41,6 +41,9 @@ export const LoginResponse = zod.object({
     nickname: zod.string(),
     role: zod.enum(["student", "admin"]),
     kindnessScore: zod.number(),
+    warningCount: zod
+      .number()
+      .describe("Number of warnings issued to this user (auto-suspends at 3)"),
     isSuspended: zod.boolean(),
     avatar: zod.string().nullish(),
     createdAt: zod.coerce.date(),
@@ -56,6 +59,9 @@ export const GetMeResponse = zod.object({
   nickname: zod.string(),
   role: zod.enum(["student", "admin"]),
   kindnessScore: zod.number(),
+  warningCount: zod
+    .number()
+    .describe("Number of warnings issued to this user (auto-suspends at 3)"),
   isSuspended: zod.boolean(),
   avatar: zod.string().nullish(),
   createdAt: zod.coerce.date(),
@@ -74,6 +80,9 @@ export const UpdateMeResponse = zod.object({
   nickname: zod.string(),
   role: zod.enum(["student", "admin"]),
   kindnessScore: zod.number(),
+  warningCount: zod
+    .number()
+    .describe("Number of warnings issued to this user (auto-suspends at 3)"),
   isSuspended: zod.boolean(),
   avatar: zod.string().nullish(),
   createdAt: zod.coerce.date(),
@@ -303,8 +312,40 @@ export const ListAdminUsersResponseItem = zod.object({
   nickname: zod.string(),
   role: zod.enum(["student", "admin"]),
   kindnessScore: zod.number(),
+  warningCount: zod
+    .number()
+    .describe("Number of warnings issued to this user (auto-suspends at 3)"),
   isSuspended: zod.boolean(),
   avatar: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem);
+
+/**
+ * @summary Warn, suspend, or reinstate a user (admin only)
+ */
+export const UpdateAdminUserParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const UpdateAdminUserBody = zod.object({
+  action: zod
+    .enum(["warn", "suspend", "reinstate"])
+    .describe(
+      "warn increments warning count (auto-suspends at 3), suspend blocks immediately, reinstate lifts suspension and resets warnings",
+    ),
+});
+
+export const UpdateAdminUserResponse = zod.object({
+  id: zod.string(),
+  schoolId: zod.string(),
+  nickname: zod.string(),
+  role: zod.enum(["student", "admin"]),
+  kindnessScore: zod.number(),
+  warningCount: zod
+    .number()
+    .describe("Number of warnings issued to this user (auto-suspends at 3)"),
+  isSuspended: zod.boolean(),
+  avatar: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});

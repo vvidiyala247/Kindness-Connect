@@ -65,7 +65,18 @@ Scores are stored as a running total on the `users` table (`kindness_score` inte
 1. Any student can report a post or comment
 2. Reports enter the `reports` table with status `pending`
 3. Admin views pending reports via the moderation dashboard
-4. Admin can: mark reviewed, hide the content, or suspend the student
+4. Admin can: mark reviewed, hide the content (auto-warns author), or block the student immediately
+
+### Behaviour Scoring & Auto-Block System
+
+- Every user has a `warningCount` (integer, default 0) on the `users` table
+- Each time admin **hides content** from a report, the author's `warningCount` is automatically incremented
+- Admin can also manually **warn** a student from the Users tab
+- At **3 warnings**, the user is automatically suspended (`isSuspended = true`)
+- Admin can **reinstate** a student at any time (resets `warningCount` to 0 and clears suspension)
+- Students with active warnings see a colour-coded banner in the feed (yellow = 1st, orange = 2nd)
+- Suspended students see a full blocking screen instead of the feed
+- All logic is in `artifacts/api-server/src/routes/admin.ts`
 
 ---
 
@@ -76,7 +87,7 @@ All tables are in PostgreSQL managed by Drizzle ORM.
 | Table | Purpose |
 |---|---|
 | `schools` | School records with unique join codes |
-| `users` | Student + admin profiles with anonymous nicknames |
+| `users` | Student + admin profiles; `warningCount` (auto-increments on actioned reports; suspends at 3), `isSuspended` |
 | `posts` | Support posts and kindness act posts (text only) |
 | `comments` | Text comments on posts |
 | `reports` | Moderation reports on posts or comments |
@@ -113,7 +124,7 @@ All tables are in PostgreSQL managed by Drizzle ORM.
   - `(tabs)/index` — feed with filter chips (All/Support/Kindness)
   - `(tabs)/new-post` — create post (support or kindness act)
   - `(tabs)/profile` — user profile, kindness score, milestone rank, own posts list, avatar picker (36 emoji via PATCH /api/auth/me)
-  - `(tabs)/admin` — moderation dashboard (admin-role-gated, hidden from students)
+  - `(tabs)/admin` — moderation dashboard with 3 tabs: Reports, Schools, Students. Students tab shows scorecard per user sorted by risk, with Warn/Block/Reinstate actions. (admin-role-gated, hidden from students)
   - `post/[id]` — post detail with comments + comment input
 - Components: PostCard, CommentItem, KindnessScore, ReportModal, EmptyState
 - Tab bar: NativeTabs (iOS 26 liquid glass) with classic BlurView fallback

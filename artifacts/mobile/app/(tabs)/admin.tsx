@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -24,8 +24,11 @@ import {
   useCreateSchool,
   useListSchools,
   getListSchoolsQueryKey,
+  useListAdminUsers,
+  useUpdateAdminUser,
+  getListAdminUsersQueryKey,
 } from "@workspace/api-client-react";
-import type { Report, School } from "@workspace/api-client-react";
+import type { Report, School, UserProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useColors } from "@/hooks/useColors";
@@ -33,7 +36,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 
 type StatusFilter = "pending" | "reviewed" | "actioned";
-type Section = "reports" | "schools";
+type Section = "reports" | "schools" | "users";
 
 const STATUS_FILTERS: StatusFilter[] = ["pending", "reviewed", "actioned"];
 
@@ -44,6 +47,209 @@ const REASON_LABELS: Record<string, string> = {
   spam: "Spam",
   other: "Other",
 };
+
+type RiskLevel = "clear" | "warning1" | "warning2" | "suspended";
+
+function getRiskLevel(user: UserProfile): RiskLevel {
+  if (user.isSuspended) return "suspended";
+  const w = user.warningCount ?? 0;
+  if (w >= 2) return "warning2";
+  if (w >= 1) return "warning1";
+  return "clear";
+}
+
+const RISK_CONFIG: Record<RiskLevel, { label: string; icon: string; bgKey: string }> = {
+  clear: { label: "Good Standing", icon: "check-circle", bgKey: "kindness" },
+  warning1: { label: "1st Warning", icon: "alert-triangle", bgKey: "amber" },
+  warning2: { label: "2nd Warning", icon: "alert-octagon", bgKey: "orange" },
+  suspended: { label: "Suspended", icon: "user-x", bgKey: "destructive" },
+};
+
+function riskColor(level: RiskLevel, colors: ReturnType<typeof import("@/hooks/useColors").useColors>): string {
+  if (level === "clear") return colors.kindness;
+  if (level === "warning1") return "#D97706";
+  if (level === "warning2") return "#EA580C";
+  return colors.destructive;
+}
+
+function riskFg(level: RiskLevel): string {
+  if (level === "clear") return "#fff";
+  return "#fff";
+}
+
+function riskSortOrder(level: RiskLevel): number {
+  if (level === "suspended") return 0;
+  if (level === "warning2") return 1;
+  if (level === "warning1") return 2;
+  return 3;
+}
+
+const AVATARS = ["🦁", "🐺", "🦊", "🐻", "🐼", "🦋", "🦅", "🐬", "🦉", "🐸", "🐨", "🦄"];
+function avatarFor(nickname: string): string {
+  let h = 0;
+  for (let i = 0; i < nickname.length; i++) h = (h * 31 + nickname.charCodeAt(i)) >>> 0;
+  return AVATARS[h % AVATARS.length];
+}
+
+function WarningDots({ count }: { count: number }) {
+  return (
+    <View style={dotStyles.row}>
+      {[0, 1, 2].map((i) => (
+        <View
+          key={i}
+          style={[
+            dotStyles.dot,
+            {
+              backgroundColor:
+                i < count
+                  ? count >= 3
+                    ? "#EF4444"
+                    : count === 2
+                    ? "#EA580C"
+                    : "#D97706"
+                  : "#E5E7EB",
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
+const dotStyles = StyleSheet.create({
+  row: { flexDirection: "row", gap: 4, alignItems: "center" },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+});
+
+function UserScoreCard({
+  user,
+  onAction,
+  loading,
+}: {
+  user: UserProfile;
+  onAction: (id: string, action: "warn" | "suspend" | "reinstate") => void;
+  loading: boolean;
+}) {
+  const colors = useColors();
+  const level = getRiskLevel(user);
+  const cfg = RISK_CONFIG[level];
+  const clr = riskColor(level, colors);
+  const warningCount = user.warningCount ?? 0;
+
+  return (
+    <View style={[cardStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={cardStyles.top}>
+        <View style={[cardStyles.avatarWrap, { backgroundColor: clr + "18" }]}>
+          <Text style={cardStyles.avatarEmoji}>{avatarFor(user.nickname)}</Text>
+        </View>
+
+        <View style={cardStyles.info}>
+          <Text style={[cardStyles.nickname, { color: colors.foreground }]}>{user.nickname}</Text>
+          <View style={cardStyles.metaRow}>
+            <WarningDots count={warningCount} />
+            <Text style={[cardStyles.metaText, { color: colors.mutedForeground }]}>
+              {warningCount} warning{warningCount !== 1 ? "s" : ""}
+            </Text>
+          </View>
+        </View>
+
+        <View style={[cardStyles.riskBadge, { backgroundColor: clr }]}>
+          <Feather name={cfg.icon as any} size={10} color={riskFg(level)} />
+          <Text style={[cardStyles.riskLabel, { color: riskFg(level) }]}>{cfg.label}</Text>
+        </View>
+      </View>
+
+      <View style={[cardStyles.actions, { borderTopColor: colors.border }]}>
+        {!user.isSuspended && (
+          <TouchableOpacity
+            style={[cardStyles.actionBtn, { borderColor: "#D97706" + "50", backgroundColor: "#D97706" + "10" }]}
+            onPress={() => onAction(user.id, "warn")}
+            disabled={loading}
+          >
+            <Feather name="alert-triangle" size={12} color="#D97706" />
+            <Text style={[cardStyles.actionText, { color: "#D97706" }]}>Warn</Text>
+          </TouchableOpacity>
+        )}
+
+        {!user.isSuspended && (
+          <TouchableOpacity
+            style={[cardStyles.actionBtn, { borderColor: colors.destructive + "50", backgroundColor: colors.destructive + "10" }]}
+            onPress={() => onAction(user.id, "suspend")}
+            disabled={loading}
+          >
+            <Feather name="user-x" size={12} color={colors.destructive} />
+            <Text style={[cardStyles.actionText, { color: colors.destructive }]}>Block</Text>
+          </TouchableOpacity>
+        )}
+
+        {user.isSuspended && (
+          <TouchableOpacity
+            style={[cardStyles.actionBtn, { borderColor: colors.kindness + "80", backgroundColor: colors.kindness + "18" }]}
+            onPress={() => onAction(user.id, "reinstate")}
+            disabled={loading}
+          >
+            <Feather name="user-check" size={12} color={colors.kindnessForeground === "#fff" ? colors.kindness : "#16A34A"} />
+            <Text style={[cardStyles.actionText, { color: colors.kindnessForeground === "#fff" ? colors.kindness : "#16A34A" }]}>Reinstate</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const cardStyles = StyleSheet.create({
+  card: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+    marginBottom: 12,
+  },
+  top: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 12,
+  },
+  avatarWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarEmoji: { fontSize: 22 },
+  info: { flex: 1, gap: 4 },
+  nickname: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  metaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  riskBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
+    flexShrink: 0,
+  },
+  riskLabel: { fontSize: 11, fontFamily: "Inter_700Bold" },
+  actions: {
+    flexDirection: "row",
+    gap: 8,
+    padding: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  actionText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+});
 
 function ReportCard({
   report,
@@ -96,21 +302,21 @@ function ReportCard({
             onPress={() => onAction(report.id, false, false)}
           >
             <Feather name="check" size={14} color={colors.foreground} />
-            <Text style={[styles.actionText, { color: colors.foreground }]}>Mark Reviewed</Text>
+            <Text style={[styles.actionText, { color: colors.foreground }]}>Reviewed</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, { borderColor: colors.destructive + "40", backgroundColor: colors.destructive + "10" }]}
             onPress={() => onAction(report.id, true, false)}
           >
             <Feather name="eye-off" size={14} color={colors.destructive} />
-            <Text style={[styles.actionText, { color: colors.destructive }]}>Hide Content</Text>
+            <Text style={[styles.actionText, { color: colors.destructive }]}>Hide + Warn</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, { borderColor: colors.destructive + "40", backgroundColor: colors.destructive + "10" }]}
             onPress={() => onAction(report.id, true, true)}
           >
             <Feather name="user-x" size={14} color={colors.destructive} />
-            <Text style={[styles.actionText, { color: colors.destructive }]}>Suspend User</Text>
+            <Text style={[styles.actionText, { color: colors.destructive }]}>Block User</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -284,6 +490,95 @@ function CreateSchoolModal({
   );
 }
 
+function UsersSection() {
+  const colors = useColors();
+  const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
+
+  const { data: users = [], isLoading, isRefetching, refetch } = useListAdminUsers();
+
+  const updateMutation = useUpdateAdminUser({
+    mutation: {
+      onSuccess: () => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        queryClient.invalidateQueries({ queryKey: getListAdminUsersQueryKey() });
+      },
+    },
+  });
+
+  const sortedUsers = useMemo(() => {
+    return [...users]
+      .filter((u) => u.role === "student")
+      .sort((a, b) => riskSortOrder(getRiskLevel(a)) - riskSortOrder(getRiskLevel(b)));
+  }, [users]);
+
+  const total = sortedUsers.length;
+  const warned = sortedUsers.filter((u) => (u.warningCount ?? 0) > 0 && !u.isSuspended).length;
+  const suspended = sortedUsers.filter((u) => u.isSuspended).length;
+
+  const handleAction = (userId: string, action: "warn" | "suspend" | "reinstate") => {
+    Haptics.selectionAsync();
+    updateMutation.mutate({ id: userId, data: { action } });
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={sortedUsers}
+      keyExtractor={(item) => item.id}
+      ListHeaderComponent={
+        <View style={[styles.statsRow, { borderBottomColor: colors.border }]}>
+          <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.statNum, { color: colors.foreground }]}>{total}</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Students</Text>
+          </View>
+          <View style={[styles.statBox, { backgroundColor: "#D97706" + "14", borderColor: "#D97706" + "40" }]}>
+            <Text style={[styles.statNum, { color: "#D97706" }]}>{warned}</Text>
+            <Text style={[styles.statLabel, { color: "#92400E" }]}>Warned</Text>
+          </View>
+          <View style={[styles.statBox, { backgroundColor: colors.destructive + "12", borderColor: colors.destructive + "40" }]}>
+            <Text style={[styles.statNum, { color: colors.destructive }]}>{suspended}</Text>
+            <Text style={[styles.statLabel, { color: colors.destructive }]}>Blocked</Text>
+          </View>
+        </View>
+      }
+      renderItem={({ item }) => (
+        <UserScoreCard
+          user={item}
+          onAction={handleAction}
+          loading={updateMutation.isPending}
+        />
+      )}
+      contentContainerStyle={[
+        styles.list,
+        { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 90) },
+      ]}
+      refreshControl={
+        <RefreshControl
+          refreshing={!!isRefetching}
+          onRefresh={refetch}
+          tintColor={colors.primary}
+        />
+      }
+      showsVerticalScrollIndicator={false}
+      ListEmptyComponent={
+        <EmptyState
+          icon="users"
+          title="No students yet"
+          subtitle="Students will appear here once they join the school"
+        />
+      }
+    />
+  );
+}
+
 export default function AdminScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -305,6 +600,7 @@ export default function AdminScreen() {
       onSuccess: () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         queryClient.invalidateQueries({ queryKey: getListAdminReportsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListAdminUsersQueryKey() });
       },
     },
   });
@@ -334,6 +630,12 @@ export default function AdminScreen() {
     );
   }
 
+  const SECTIONS: { key: Section; label: string; icon: string }[] = [
+    { key: "reports", label: "Reports", icon: "flag" },
+    { key: "schools", label: "Schools", icon: "home" },
+    { key: "users", label: "Students", icon: "users" },
+  ];
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View
@@ -354,36 +656,36 @@ export default function AdminScreen() {
       </View>
 
       <View style={[styles.segmentRow, { borderBottomColor: colors.border }]}>
-        {(["reports", "schools"] as Section[]).map((s) => (
+        {SECTIONS.map((s) => (
           <Pressable
-            key={s}
+            key={s.key}
             style={[
               styles.segment,
               {
-                borderBottomColor: section === s ? colors.primary : "transparent",
+                borderBottomColor: section === s.key ? colors.primary : "transparent",
                 borderBottomWidth: 2,
               },
             ]}
-            onPress={() => setSection(s)}
+            onPress={() => setSection(s.key)}
           >
             <Feather
-              name={s === "reports" ? "flag" : "home"}
+              name={s.icon as any}
               size={14}
-              color={section === s ? colors.primary : colors.mutedForeground}
+              color={section === s.key ? colors.primary : colors.mutedForeground}
             />
             <Text
               style={[
                 styles.segmentLabel,
-                { color: section === s ? colors.primary : colors.mutedForeground },
+                { color: section === s.key ? colors.primary : colors.mutedForeground },
               ]}
             >
-              {s === "reports" ? "Reports" : "Schools"}
+              {s.label}
             </Text>
           </Pressable>
         ))}
       </View>
 
-      {section === "reports" ? (
+      {section === "reports" && (
         <>
           <View style={[styles.filterRow, { borderBottomColor: colors.border }]}>
             {STATUS_FILTERS.map((s) => (
@@ -440,7 +742,9 @@ export default function AdminScreen() {
             />
           )}
         </>
-      ) : (
+      )}
+
+      {section === "schools" && (
         <>
           <View style={[styles.schoolsToolbar, { borderBottomColor: colors.border }]}>
             <Text style={[styles.schoolsCount, { color: colors.mutedForeground }]}>
@@ -488,6 +792,8 @@ export default function AdminScreen() {
         </>
       )}
 
+      {section === "users" && <UsersSection />}
+
       <CreateSchoolModal
         visible={createSchoolOpen}
         onClose={() => setCreateSchoolOpen(false)}
@@ -529,7 +835,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 12,
   },
-  segmentLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  segmentLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   filterRow: {
     flexDirection: "row",
     paddingHorizontal: 16,
@@ -603,6 +909,21 @@ const styles = StyleSheet.create({
   activeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
   activeBadgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  statsRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingBottom: 16,
+  },
+  statBox: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    gap: 2,
+  },
+  statNum: { fontSize: 22, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
+  statLabel: { fontSize: 11, fontFamily: "Inter_500Medium" },
   modalContainer: { flex: 1 },
   modalHeader: {
     flexDirection: "row",
@@ -634,30 +955,35 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 14,
     borderWidth: 1.5,
-    marginTop: 4,
   },
-  codeBoxValue: { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: 4 },
-  codeHint: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center" },
+  codeBoxValue: { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: 6 },
+  codeHint: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
   doneBtn: {
-    alignSelf: "stretch",
+    width: "100%",
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
     marginTop: 8,
   },
   doneBtnText: { fontSize: 16, fontFamily: "Inter_700Bold" },
-  formView: { gap: 12, paddingTop: 8 },
-  fieldLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  formView: { gap: 8 },
+  fieldLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   textInput: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
     fontFamily: "Inter_400Regular",
   },
-  fieldHint: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
-  errorBox: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderRadius: 10 },
+  fieldHint: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+  },
   errorText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
   submitBtn: {
     flexDirection: "row",
@@ -666,7 +992,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 16,
     borderRadius: 14,
-    marginTop: 4,
+    marginTop: 8,
   },
   submitBtnText: { fontSize: 16, fontFamily: "Inter_700Bold" },
 });

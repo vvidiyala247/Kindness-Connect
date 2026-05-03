@@ -40,6 +40,8 @@ export interface UserProfile {
   nickname: string;
   role: UserProfileRole;
   kindnessScore: number;
+  /** Number of warnings issued to this user (auto-suspends at 3) */
+  warningCount: number;
   isSuspended: boolean;
   avatar?: string | null;
   createdAt: string;
@@ -189,6 +191,23 @@ export interface CreateReportBody {
   targetType: CreateReportBodyTargetType;
   targetId: string;
   reason: CreateReportBodyReason;
+}
+
+/**
+ * warn increments warning count (auto-suspends at 3), suspend blocks immediately, reinstate lifts suspension and resets warnings
+ */
+export type UpdateAdminUserBodyAction =
+  (typeof UpdateAdminUserBodyAction)[keyof typeof UpdateAdminUserBodyAction];
+
+export const UpdateAdminUserBodyAction = {
+  warn: "warn",
+  suspend: "suspend",
+  reinstate: "reinstate",
+} as const;
+
+export interface UpdateAdminUserBody {
+  /** warn increments warning count (auto-suspends at 3), suspend blocks immediately, reinstate lifts suspension and resets warnings */
+  action: UpdateAdminUserBodyAction;
 }
 
 export type UpdateReportBodyStatus =

@@ -16,6 +16,7 @@ function safeUser(user: typeof usersTable.$inferSelect) {
     nickname: user.nickname,
     role: user.role,
     kindnessScore: user.kindnessScore,
+    warningCount: user.warningCount,
     isSuspended: user.isSuspended,
     avatar: user.avatar ?? null,
     createdAt: user.createdAt,

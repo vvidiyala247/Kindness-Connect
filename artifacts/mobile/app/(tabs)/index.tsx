@@ -27,6 +27,7 @@ import { PostCard } from "@/components/PostCard";
 import { EmptyState } from "@/components/EmptyState";
 import { ReportModal } from "@/components/ReportModal";
 import { DailyPromptBanner } from "@/components/DailyPromptBanner";
+import { BehaviorAlert } from "@/components/BehaviorAlert";
 
 type FilterType = "all" | "support" | "kindness_act";
 
@@ -160,7 +161,9 @@ export default function FeedScreen() {
         ))}
       </View>
 
-      {isLoading ? (
+      {user?.isSuspended ? (
+        <BehaviorAlert />
+      ) : isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -182,7 +185,12 @@ export default function FeedScreen() {
         <FlatList
           data={posts}
           keyExtractor={(item) => item.id}
-          ListHeaderComponent={<DailyPromptBanner />}
+          ListHeaderComponent={
+            <>
+              <BehaviorAlert />
+              <DailyPromptBanner />
+            </>
+          }
           renderItem={({ item }) => (
             <PostCard
               post={item}

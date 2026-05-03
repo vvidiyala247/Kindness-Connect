@@ -18,6 +18,7 @@ export const usersTable = pgTable(
     passwordHash: text("password_hash").notNull(),
     role: text("role").$type<UserRole>().notNull().default("student"),
     kindnessScore: integer("kindness_score").notNull().default(0),
+    warningCount: integer("warning_count").notNull().default(0),
     isSuspended: boolean("is_suspended").notNull().default(false),
     avatar: text("avatar"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -26,6 +27,7 @@ export const usersTable = pgTable(
     uniqueIndex("users_school_nickname_unique").on(table.schoolId, table.nickname),
     check("users_role_valid", sql`${table.role} IN ('student', 'admin')`),
     check("users_kindness_score_non_negative", sql`${table.kindnessScore} >= 0`),
+    check("users_warning_count_non_negative", sql`${table.warningCount} >= 0`),
     check(
       "users_nickname_format",
       sql`${table.nickname} ~ '^[A-Z][a-z]+[A-Z][a-z]+$'`,
