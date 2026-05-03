@@ -3,6 +3,7 @@ import { eq, and, desc, sql, count } from "drizzle-orm";
 import { db, postsTable, usersTable, commentsTable, kindnessScoresTable } from "@workspace/db";
 import { CreatePostBody, ListPostsQueryParams } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
+import { sendPushNotification } from "../lib/notifications";
 
 const router: IRouter = Router();
 
@@ -96,7 +97,7 @@ router.post("/posts", requireAuth, async (req, res): Promise<void> => {
     .returning();
 
   const [author] = await db
-    .select({ nickname: usersTable.nickname })
+    .select({ nickname: usersTable.nickname, pushToken: usersTable.pushToken })
     .from(usersTable)
     .where(eq(usersTable.id, user.userId));
 
@@ -122,6 +123,19 @@ router.post("/posts", requireAuth, async (req, res): Promise<void> => {
     authorNickname: author?.nickname ?? user.nickname,
     commentCount: 0,
   });
+
+  // Fire-and-forget encouraging notification after response is sent
+  if (type === "kindness_act" && author?.pushToken) {
+    const nickname = author.nickname ?? user.nickname;
+    void sendPushNotification([
+      {
+        to: author.pushToken,
+        title: `You're making a difference, ${nickname}! 💛`,
+        body: "Thank you for spreading kindness. You just earned 5 points — your school community thanks you!",
+        sound: "default",
+      },
+    ]);
+  }
 });
 
 router.get("/posts/:id", requireAuth, async (req, res): Promise<void> => {

@@ -18,6 +18,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { FeedBadgeProvider } from "@/contexts/FeedBadgeContext";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 setBaseUrl(
   process.env.EXPO_PUBLIC_API_URL ||
@@ -40,6 +41,8 @@ function RootLayoutNav() {
   const { token, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+
+  usePushNotifications();
 
   useEffect(() => {
     if (isLoading) return;

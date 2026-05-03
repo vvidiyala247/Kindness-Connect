@@ -89,6 +89,17 @@ export const UpdateMeResponse = zod.object({
 });
 
 /**
+ * @summary Register or update the Expo push notification token for the current user
+ */
+
+export const RegisterPushTokenBody = zod.object({
+  token: zod
+    .string()
+    .min(1)
+    .describe("Expo push token (e.g. ExponentPushToken[xxxx])"),
+});
+
+/**
  * @summary List all active schools (public)
  */
 export const ListSchoolsResponseItem = zod.object({

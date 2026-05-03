@@ -193,6 +193,14 @@ export interface CreateReportBody {
   reason: CreateReportBodyReason;
 }
 
+export interface RegisterPushTokenBody {
+  /**
+   * Expo push token (e.g. ExponentPushToken[xxxx])
+   * @minLength 1
+   */
+  token: string;
+}
+
 /**
  * warn increments warning count (auto-suspends at 3), suspend blocks immediately, reinstate lifts suspension and resets warnings
  */

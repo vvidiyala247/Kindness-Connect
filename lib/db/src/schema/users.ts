@@ -21,6 +21,7 @@ export const usersTable = pgTable(
     warningCount: integer("warning_count").notNull().default(0),
     isSuspended: boolean("is_suspended").notNull().default(false),
     avatar: text("avatar"),
+    pushToken: text("push_token"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

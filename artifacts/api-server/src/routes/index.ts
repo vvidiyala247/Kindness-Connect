@@ -6,6 +6,7 @@ import postsRouter from "./posts";
 import commentsRouter from "./comments";
 import reportsRouter from "./reports";
 import adminRouter from "./admin";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(postsRouter);
 router.use(commentsRouter);
 router.use(reportsRouter);
 router.use(adminRouter);
+router.use(notificationsRouter);
 
 export default router;

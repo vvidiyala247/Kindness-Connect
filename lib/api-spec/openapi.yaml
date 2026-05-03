@@ -121,6 +121,25 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /users/push-token:
+    put:
+      operationId: registerPushToken
+      tags: [auth]
+      summary: Register or update the Expo push notification token for the current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPushTokenBody"
+      responses:
+        "204":
+          description: Token registered successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /schools:
     get:
       operationId: listSchools
@@ -786,6 +805,16 @@ components:
         - targetType
         - targetId
         - reason
+
+    RegisterPushTokenBody:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Expo push token (e.g. ExponentPushToken[xxxx])
+          minLength: 1
+      required:
+        - token
 
     UpdateAdminUserBody:
       type: object
