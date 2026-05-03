@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "KindnessConnect",
-    "slug": "mobile",
+    "slug": "kindnessconnect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "kindnessconnect",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -14,6 +14,8 @@
       "backgroundColor": "#fefaf6"
     },
     "ios": {
+      "bundleIdentifier": "com.kindnessconnect.app",
+      "buildNumber": "1",
       "supportsTablet": false
     },
     "android": {},
