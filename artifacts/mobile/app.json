@@ -30,7 +30,14 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow KindnessConnect to use your microphone so you can speak your message instead of typing.",
+          "speechRecognitionPermission": "Allow KindnessConnect to recognise your speech so you can dictate kindness messages hands-free."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

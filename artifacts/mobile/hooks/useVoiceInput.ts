@@ -1,4 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { Platform } from "react-native";
+import {
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+} from "expo-speech-recognition";
 
 type Options = {
   onFinalTranscript: (text: string) => void;
@@ -12,67 +17,66 @@ type VoiceInputResult = {
   stop: () => void;
 };
 
+function detectSupport(): boolean {
+  if (Platform.OS === "ios" || Platform.OS === "android") return true;
+  return (
+    typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
+  );
+}
+
 export function useVoiceInput({ onFinalTranscript }: Options): VoiceInputResult {
   const [isListening, setIsListening] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState("");
-  const recognitionRef = useRef<any>(null);
+  const [isSupported] = useState(detectSupport);
   const onFinalRef = useRef(onFinalTranscript);
   onFinalRef.current = onFinalTranscript;
 
-  const isSupported =
-    typeof window !== "undefined" &&
-    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  // Native & web speech result events — always registered (Rules of Hooks)
+  useSpeechRecognitionEvent("result", (event) => {
+    const isFinal = event.isFinal;
+    const transcript = event.results[0]?.transcript ?? "";
+    if (isFinal) {
+      if (transcript.trim()) {
+        onFinalRef.current(transcript.trim());
+      }
+      setInterimTranscript("");
+    } else {
+      setInterimTranscript(transcript);
+    }
+  });
+
+  useSpeechRecognitionEvent("error", (event) => {
+    // Ignore "no-speech" silences — user just paused
+    if (event.error === "no-speech") return;
+    setIsListening(false);
+    setInterimTranscript("");
+  });
+
+  useSpeechRecognitionEvent("end", () => {
+    setIsListening(false);
+    setInterimTranscript("");
+  });
 
   const stop = useCallback(() => {
-    recognitionRef.current?.stop();
+    ExpoSpeechRecognitionModule.stop();
   }, []);
 
-  const start = useCallback(() => {
+  const start = useCallback(async () => {
     if (!isSupported) return;
-    const SR =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    const recognition = new SR();
-    recognitionRef.current = recognition;
 
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
+    // Request microphone + speech recognition permissions (iOS + Android)
+    const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    if (!granted) return;
 
-    recognition.onstart = () => {
-      setInterimTranscript("");
-    };
-
-    recognition.onresult = (event: any) => {
-      let interim = "";
-      let final = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          final += t;
-        } else {
-          interim += t;
-        }
-      }
-      setInterimTranscript(interim);
-      if (final) {
-        onFinalRef.current(final.trim());
-        setInterimTranscript("");
-      }
-    };
-
-    recognition.onerror = () => {
-      setIsListening(false);
-      setInterimTranscript("");
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      setInterimTranscript("");
-    };
-
+    setInterimTranscript("");
     setIsListening(true);
-    recognition.start();
+
+    ExpoSpeechRecognitionModule.start({
+      lang: "en-US",
+      interimResults: true,
+      continuous: true,
+    });
   }, [isSupported]);
 
   const toggle = useCallback(() => {
@@ -83,9 +87,10 @@ export function useVoiceInput({ onFinalTranscript }: Options): VoiceInputResult 
     }
   }, [isListening, start, stop]);
 
+  // Abort on unmount so recognition never leaks
   useEffect(() => {
     return () => {
-      recognitionRef.current?.abort();
+      ExpoSpeechRecognitionModule.abort();
     };
   }, []);
 
