@@ -131,7 +131,11 @@ export function PostCard({ post, currentUserId, commentCount, onReport }: PostCa
         </TouchableOpacity>
 
         {post.authorId !== currentUserId && onReport && (
-          <TouchableOpacity style={styles.reportBtn} onPress={() => onReport(post)}>
+          <TouchableOpacity
+            style={styles.reportBtn}
+            onPress={() => onReport(post)}
+            accessibilityLabel="Report post"
+          >
             <Feather name="flag" size={14} color={colors.mutedForeground} />
           </TouchableOpacity>
         )}

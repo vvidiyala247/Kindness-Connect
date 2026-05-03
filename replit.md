@@ -160,7 +160,28 @@ pnpm --filter @workspace/api-spec run codegen
 
 # Run API server (managed by workflow, not manually)
 pnpm --filter @workspace/api-server run dev
+
+# Run mobile unit/integration tests (70 tests, all passing)
+cd artifacts/mobile && pnpm test
 ```
+
+## Testing
+
+The mobile app has a Jest-based test suite under `artifacts/mobile/__tests__/` covering:
+
+- **login.test.tsx** — Login screen form, validation, auth context
+- **register.test.tsx** — Registration flow, school picker modal, validation
+- **feed.test.tsx** — Feed screen, post cards, filter chips, empty/error states
+- **new-post.test.tsx** — Post creation form, type selection, character count, validation
+- **post-detail.test.tsx** — Post detail view, comments, comment submission
+- **report-modal.test.tsx** — Report modal, reason selection, submission
+
+**Test setup:** Uses `@testing-library/react` (RTL with DOM queries) instead of RNTL, because jest-expo/web renders via react-native-web which produces HTML elements. The mock for `@workspace/api-client-react` lives in `artifacts/mobile/__mocks__/`.
+
+Key patterns:
+- `fireEvent.click` for TouchableOpacity (renders as `<div tabindex="0">`)
+- `fireEvent.change(el, { target: { value } })` for TextInput (renders as `<input>`)
+- `getAllByText(...).at(-1)` when the same text appears in parent+child elements
 
 ## Environment Variables
 

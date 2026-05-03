@@ -182,6 +182,7 @@ export default function PostDetailScreen() {
           maxLength={MAX_COMMENT}
           multiline
           returnKeyType="send"
+          testID="comment-input"
         />
         <TouchableOpacity
           style={[
@@ -193,6 +194,7 @@ export default function PostDetailScreen() {
           ]}
           onPress={handleSendComment}
           disabled={!commentText.trim() || createCommentMutation.isPending}
+          accessibilityLabel="Send comment"
         >
           {createCommentMutation.isPending ? (
             <ActivityIndicator size="small" color="#fff" />
