@@ -1,5 +1,6 @@
 # KindnessConnect
 
+[![CI / Gate](https://img.shields.io/github/actions/workflow/status/vvidiyala247/kindness-connect/ci.yml?job=gate&label=CI%20%2F%20Gate&logo=githubactions)](https://github.com/vvidiyala247/kindness-connect/actions/workflows/ci.yml?query=job%3Agate)
 [![Mobile Tests](https://img.shields.io/github/actions/workflow/status/vvidiyala247/kindness-connect/ci.yml?job=test-mobile&label=Mobile%20Tests&logo=expo)](https://github.com/vvidiyala247/kindness-connect/actions/workflows/ci.yml?query=job%3Atest-mobile)
 [![API Tests](https://img.shields.io/github/actions/workflow/status/vvidiyala247/kindness-connect/ci.yml?job=test-api&label=API%20Tests&logo=node.js)](https://github.com/vvidiyala247/kindness-connect/actions/workflows/ci.yml?query=job%3Atest-api)
 [![Type Check](https://img.shields.io/github/actions/workflow/status/vvidiyala247/kindness-connect/ci.yml?job=typecheck&label=Type%20Check&logo=typescript)](https://github.com/vvidiyala247/kindness-connect/actions/workflows/ci.yml?query=job%3Atypecheck)
@@ -11,6 +12,7 @@ A school-safe, mobile-first social platform for students to share anonymous supp
 
 | Badge | Job ID | Workflow file | Trigger |
 |---|---|---|---|
+| **CI / Gate** | `gate` | `.github/workflows/ci.yml` | Runs after all jobs; required check for branch protection |
 | Mobile Tests | `test-mobile` | `.github/workflows/ci.yml` | Changes to `artifacts/mobile/**` or shared libs |
 | API Tests | `test-api` | `.github/workflows/ci.yml` | Changes to `artifacts/api-server/**` or shared libs |
 | Type Check | `typecheck` | `.github/workflows/ci.yml` | Changes to any package |
