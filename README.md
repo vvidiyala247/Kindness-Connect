@@ -63,23 +63,27 @@ check would otherwise appear.
 |---|---|
 | Required approving reviews | 1 |
 | Dismiss stale reviews | `true` — pushing new commits resets existing approvals |
-| Require code owner review | `false` (see CODEOWNERS below) |
+| Require code owner review | `true` — owners defined in `.github/CODEOWNERS` |
 | Enforce for admins | `true` — repository admins are subject to the same rules |
 
-### Configuring CODEOWNERS (optional)
+### CODEOWNERS
 
-If you want specific people or teams to be required reviewers for certain paths,
-create a `.github/CODEOWNERS` file. For example:
+`.github/CODEOWNERS` defines which people must review changes to each area of
+the codebase. GitHub automatically adds them as required reviewers when a PR
+touches the matching paths:
 
-```
-# All files — any one of these people must approve
-*   @your-org/mobile-team
+| Path | Owner(s) |
+|---|---|
+| `*` (catch-all) | `@vvidiyala247` |
+| `artifacts/mobile/` | `@vvidiyala247` |
+| `artifacts/api-server/` | `@vvidiyala247` |
+| `lib/` | `@vvidiyala247` |
+| `.github/` | `@vvidiyala247` |
 
-# API changes must also be approved by a backend owner
-artifacts/api-server/   @your-org/backend-team
-```
-
-Then set `require_code_owner_reviews` to `true` in `.github/protect-main.sh` and re-run the script.
+To change ownership, edit `.github/CODEOWNERS` directly — no need to re-run
+`protect-main.sh` unless you also want to toggle `require_code_owner_reviews`.
+Update the handles with team slugs (e.g. `@your-org/mobile-team`) as your
+team grows to route reviews to the right people per area automatically.
 
 ### Manual setup via GitHub UI
 

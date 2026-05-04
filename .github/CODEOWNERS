@@ -1,0 +1,29 @@
+# CODEOWNERS
+# GitHub uses this file to automatically request reviews from the right people
+# based on which files a pull request touches.
+#
+# Rules are matched top-to-bottom; the LAST matching rule wins.
+# Patterns follow .gitignore syntax.
+#
+# Update the handles below with team slugs (e.g. @your-org/mobile-team) as
+# the team grows.  Team slugs require the team to exist in your GitHub
+# organisation and to have read access to the repository.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ── Catch-all ─────────────────────────────────────────────────────────────────
+# Any file not matched by a more specific rule below requires approval from at
+# least one of these owners.
+*   @vvidiyala247
+
+# ── Mobile app (Expo / React Native) ──────────────────────────────────────────
+artifacts/mobile/   @vvidiyala247
+
+# ── Backend API (Express) ─────────────────────────────────────────────────────
+artifacts/api-server/   @vvidiyala247
+
+# ── Shared libraries ──────────────────────────────────────────────────────────
+lib/   @vvidiyala247
+
+# ── CI / GitHub config ────────────────────────────────────────────────────────
+.github/   @vvidiyala247

@@ -39,7 +39,7 @@ echo ""
 echo "  required_pull_request_reviews :"
 echo "    • required_approving_review_count : 1"
 echo "    • dismiss_stale_reviews           : true  (new commits reset approvals)"
-echo "    • require_code_owner_reviews      : false (enable if CODEOWNERS is set up)"
+echo "    • require_code_owner_reviews      : true  (owners defined in .github/CODEOWNERS)"
 echo "  restrictions                  : null  (no push restrictions)"
 echo "  enforce_admins                : true  (admins are also subject to protection rules)"
 echo ""
@@ -84,7 +84,7 @@ gh api \
   "enforce_admins": true,
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": false,
+    "require_code_owner_reviews": true,
     "required_approving_review_count": 1
   },
   "restrictions": null
@@ -101,5 +101,4 @@ echo ""
 echo "At least 1 approving review is now required before merging."
 echo "Stale approvals are dismissed automatically when new commits are pushed."
 echo ""
-echo "To require review from code owners, add a CODEOWNERS file and set"
-echo "require_code_owner_reviews to true in the script payload."
+echo "Code owner reviews are required. Ownership rules are defined in .github/CODEOWNERS."
