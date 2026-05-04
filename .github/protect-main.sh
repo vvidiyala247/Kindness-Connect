@@ -37,11 +37,15 @@ echo "    • CI / Mobile Test Suite  (job: test-mobile)"
 echo "    • CI / API Server Tests   (job: test-api)"
 echo "    • CI / Type Check         (job: typecheck)"
 echo ""
-echo "  required_pull_request_reviews : null  (no required reviewers)"
+echo "  required_pull_request_reviews :"
+echo "    • required_approving_review_count : 1"
+echo "    • dismiss_stale_reviews           : true  (new commits reset approvals)"
+echo "    • require_code_owner_reviews      : false (enable if CODEOWNERS is set up)"
 echo "  restrictions                  : null  (no push restrictions)"
 echo "  enforce_admins                : false (admins can bypass)"
 echo ""
-echo "  Any existing PR-review or push-restriction rules will be cleared."
+echo "  All existing protection rules (including any PR review and push-restriction"
+echo "  settings) will be REPLACED with the values above."
 echo ""
 
 if [[ -t 0 ]]; then
@@ -84,7 +88,11 @@ gh api \
     ]
   },
   "enforce_admins": false,
-  "required_pull_request_reviews": null,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 1
+  },
   "restrictions": null
 }
 JSON
@@ -94,5 +102,8 @@ echo "Done. Branch protection is now active on '${BRANCH}'."
 echo ""
 echo "Skipped jobs (when no relevant files changed) count as passing."
 echo ""
-echo "To also require PR reviews, go to Settings → Branches in GitHub and"
-echo "edit the ruleset to add 'Require a pull request before merging'."
+echo "At least 1 approving review is now required before merging."
+echo "Stale approvals are dismissed automatically when new commits are pushed."
+echo ""
+echo "To require review from code owners, add a CODEOWNERS file and set"
+echo "require_code_owner_reviews to true in the script payload."

@@ -16,7 +16,10 @@ A school-safe, mobile-first social platform for students to share anonymous supp
 
 ## Branch Protection
 
-Branch protection on `main` ensures no PR can be merged if any of the three CI jobs fail.
+Branch protection on `main` ensures no PR can be merged unless:
+
+1. All required CI jobs pass (or are skipped), **and**
+2. At least **1 approving review** has been submitted by another team member.
 
 ### One-time setup (requires GitHub CLI)
 
@@ -30,10 +33,13 @@ bash .github/protect-main.sh
 
 > **Warning:** The script uses a full `PUT` replace, not a partial update.
 > It will **overwrite** the entire protection ruleset — including any existing
-> pull-request review or push-restriction rules. Re-apply those manually in
-> **Settings → Branches** after running, or edit the script payload first.
+> PR review settings and push-restriction rules — replacing them with the values
+> configured in the script payload. Edit the payload before running if you need
+> different defaults, or re-apply changes manually in **Settings → Branches** afterwards.
 
-This script calls the GitHub REST API to mark the following as **required status checks**:
+This script calls the GitHub REST API to configure the following rules:
+
+**Required status checks** (CI must pass before merge):
 
 | GitHub check context | CI job ID | Triggered by |
 |---|---|---|
@@ -46,17 +52,42 @@ This script calls the GitHub REST API to mark the following as **required status
 > as neutral, which satisfies a required-status-check rule. You do not need every
 > job to run on every PR.
 
+**Required pull request reviews:**
+
+| Setting | Value |
+|---|---|
+| Required approving reviews | 1 |
+| Dismiss stale reviews | `true` — pushing new commits resets existing approvals |
+| Require code owner review | `false` (see CODEOWNERS below) |
+
+### Configuring CODEOWNERS (optional)
+
+If you want specific people or teams to be required reviewers for certain paths,
+create a `.github/CODEOWNERS` file. For example:
+
+```
+# All files — any one of these people must approve
+*   @your-org/mobile-team
+
+# API changes must also be approved by a backend owner
+artifacts/api-server/   @your-org/backend-team
+```
+
+Then set `require_code_owner_reviews` to `true` in `.github/protect-main.sh` and re-run the script.
+
 ### Manual setup via GitHub UI
 
 1. Go to **Settings → Branches** in your GitHub repository.
 2. Click **Add branch ruleset** (or **Add rule** on older UI) and set the target branch to `main`.
-3. Enable **Require status checks to pass before merging**.
-4. Search for and add each of these checks:
+3. Enable **Require a pull request before merging** and set **Required approvals** to `1`.
+4. Check **Dismiss stale pull request approvals when new commits are pushed**.
+5. Enable **Require status checks to pass before merging**.
+6. Search for and add each of these checks:
    - `CI / Mobile Test Suite`
    - `CI / API Server Tests`
    - `CI / Type Check`
-5. Optionally enable **Require branches to be up to date before merging** (the script sets `strict: true`).
-6. Save the ruleset.
+7. Optionally enable **Require branches to be up to date before merging** (the script sets `strict: true`).
+8. Save the ruleset.
 
 ## Quick Start
 
