@@ -3,6 +3,7 @@
 [![Mobile Tests](https://img.shields.io/github/actions/workflow/status/vvidiyala247/kindness-connect/ci.yml?job=test-mobile&label=Mobile%20Tests&logo=expo)](https://github.com/vvidiyala247/kindness-connect/actions/workflows/ci.yml?query=job%3Atest-mobile)
 [![API Tests](https://img.shields.io/github/actions/workflow/status/vvidiyala247/kindness-connect/ci.yml?job=test-api&label=API%20Tests&logo=node.js)](https://github.com/vvidiyala247/kindness-connect/actions/workflows/ci.yml?query=job%3Atest-api)
 [![Type Check](https://img.shields.io/github/actions/workflow/status/vvidiyala247/kindness-connect/ci.yml?job=typecheck&label=Type%20Check&logo=typescript)](https://github.com/vvidiyala247/kindness-connect/actions/workflows/ci.yml?query=job%3Atypecheck)
+[![Coverage](https://codecov.io/gh/vvidiyala247/kindness-connect/branch/main/graph/badge.svg)](https://codecov.io/gh/vvidiyala247/kindness-connect)
 
 A school-safe, mobile-first social platform for students to share anonymous support messages and kindness acts within their school community.
 
@@ -13,6 +14,9 @@ A school-safe, mobile-first social platform for students to share anonymous supp
 | Mobile Tests | `test-mobile` | `.github/workflows/ci.yml` | Changes to `artifacts/mobile/**` or shared libs |
 | API Tests | `test-api` | `.github/workflows/ci.yml` | Changes to `artifacts/api-server/**` or shared libs |
 | Type Check | `typecheck` | `.github/workflows/ci.yml` | Changes to any package |
+| Coverage | — (Codecov) | `.github/workflows/ci.yml` | Uploaded by `test-mobile` and `test-api` jobs |
+
+> **One-time setup:** Add a `CODECOV_TOKEN` secret in **Settings → Secrets and variables → Actions** in your GitHub repository. Obtain the token from [codecov.io](https://codecov.io) after connecting your repository. The badge will display "unknown" until the first successful upload.
 
 ## Branch Protection
 

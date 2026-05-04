@@ -24,7 +24,16 @@
     ],
     "transformIgnorePatterns": [
       "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|@workspace))"
-    ]
+    ],
+    "collectCoverageFrom": [
+      "app/**/*.{ts,tsx}",
+      "components/**/*.{ts,tsx}",
+      "hooks/**/*.{ts,tsx}",
+      "!**/__tests__/**",
+      "!**/__mocks__/**"
+    ],
+    "coverageReporters": ["text", "lcov"],
+    "coverageDirectory": "coverage"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

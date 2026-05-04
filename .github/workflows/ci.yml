@@ -107,8 +107,16 @@ jobs:
           key: ${{ runner.os }}-node24-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
           fail-on-cache-miss: true
 
-      - name: Run mobile test suite
-        run: pnpm --filter @workspace/mobile test --ci
+      - name: Run mobile test suite with coverage
+        run: pnpm --filter @workspace/mobile test --ci --coverage
+
+      - name: Upload mobile coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./artifacts/mobile/coverage/lcov.info
+          flags: mobile
+          fail_ci_if_error: false
 
   typecheck:
     name: Type Check
@@ -181,8 +189,16 @@ jobs:
           key: ${{ runner.os }}-node24-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
           fail-on-cache-miss: true
 
-      - name: Run API server tests
-        run: pnpm --filter @workspace/api-server test
+      - name: Run API server tests with coverage
+        run: pnpm --filter @workspace/api-server test --coverage
+
+      - name: Upload API coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./artifacts/api-server/coverage/lcov.info
+          flags: api
+          fail_ci_if_error: false
 
   gate:
     name: Gate
