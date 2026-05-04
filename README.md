@@ -64,6 +64,7 @@ check would otherwise appear.
 | Required approving reviews | 1 |
 | Dismiss stale reviews | `true` — pushing new commits resets existing approvals |
 | Require code owner review | `false` (see CODEOWNERS below) |
+| Enforce for admins | `true` — repository admins are subject to the same rules |
 
 ### Configuring CODEOWNERS (optional)
 

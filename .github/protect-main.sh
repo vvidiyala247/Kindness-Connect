@@ -41,7 +41,7 @@ echo "    • required_approving_review_count : 1"
 echo "    • dismiss_stale_reviews           : true  (new commits reset approvals)"
 echo "    • require_code_owner_reviews      : false (enable if CODEOWNERS is set up)"
 echo "  restrictions                  : null  (no push restrictions)"
-echo "  enforce_admins                : false (admins can bypass)"
+echo "  enforce_admins                : true  (admins are also subject to protection rules)"
 echo ""
 echo "  All existing protection rules (including any PR review and push-restriction"
 echo "  settings) will be REPLACED with the values above."
@@ -81,7 +81,7 @@ gh api \
       "CI / Gate"
     ]
   },
-  "enforce_admins": false,
+  "enforce_admins": true,
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,
     "require_code_owner_reviews": false,
