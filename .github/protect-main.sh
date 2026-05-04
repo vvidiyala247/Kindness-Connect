@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# Configures GitHub branch protection on `main` so that all three CI jobs
+# must pass (or be skipped) before a pull request can be merged.
+#
+# Prerequisites:
+#   - GitHub CLI installed: https://cli.github.com/
+#   - Authenticated:  gh auth login
+#   - Run from the repo root, or set REPO below manually.
+#
+# Usage:
+#   bash .github/protect-main.sh
+#   bash .github/protect-main.sh owner/repo   # override repo slug
+#
+# WARNING: The GitHub branch-protection API uses a full PUT (replace), not a
+# PATCH (merge).  This means the payload below will OVERWRITE the entire
+# protection ruleset for the branch — including any existing required-reviewer
+# or push-restriction rules you have already set up in the GitHub UI.
+#
+# If you already have pull-request review requirements or push restrictions
+# configured, either:
+#   a) Re-apply them manually in Settings → Branches after running this script,
+#   b) Edit the payload below to include those fields before running, or
+#   c) Make the changes directly in the GitHub UI instead of using this script.
+
+set -euo pipefail
+
+REPO="${1:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}"
+BRANCH="main"
+
+# ── Confirmation prompt ────────────────────────────────────────────────────────
+echo ""
+echo "This script will REPLACE all branch protection rules on '${BRANCH}'"
+echo "in repo '${REPO}' with the settings below:"
+echo ""
+echo "  Required status checks (CI must pass before merge):"
+echo "    • CI / Mobile Test Suite  (job: test-mobile)"
+echo "    • CI / API Server Tests   (job: test-api)"
+echo "    • CI / Type Check         (job: typecheck)"
+echo ""
+echo "  required_pull_request_reviews : null  (no required reviewers)"
+echo "  restrictions                  : null  (no push restrictions)"
+echo "  enforce_admins                : false (admins can bypass)"
+echo ""
+echo "  Any existing PR-review or push-restriction rules will be cleared."
+echo ""
+
+if [[ -t 0 ]]; then
+  read -r -p "Continue? [y/N] " CONFIRM
+  case "${CONFIRM}" in
+    [yY][eE][sS]|[yY]) ;;
+    *) echo "Aborted."; exit 1 ;;
+  esac
+fi
+
+# ── Apply protection rules ─────────────────────────────────────────────────────
+# Required status check contexts must match EXACTLY what GitHub Actions reports.
+# Format: "<Workflow name> / <Job name>"  (name: field in ci.yml, not the job id)
+#
+# Job ID        name: in ci.yml          GitHub check context
+# -----------   ----------------------   --------------------------------
+# test-mobile   Mobile Test Suite        CI / Mobile Test Suite
+# test-api      API Server Tests         CI / API Server Tests
+# typecheck     Type Check               CI / Type Check
+#
+# NOTE: when a job is skipped (nothing in its watched paths changed) GitHub
+# marks the check as "skipped", which satisfies a required-status-check rule
+# just like a passing check does.  You do NOT need to force every job to run
+# on every PR — skipped jobs are treated as green.
+
+echo "Applying branch protection to ${REPO}:${BRANCH} ..."
+
+gh api \
+  "repos/${REPO}/branches/${BRANCH}/protection" \
+  --method PUT \
+  --header "Accept: application/vnd.github+json" \
+  --input - <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": [
+      "CI / Mobile Test Suite",
+      "CI / API Server Tests",
+      "CI / Type Check"
+    ]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": null,
+  "restrictions": null
+}
+JSON
+
+echo ""
+echo "Done. Branch protection is now active on '${BRANCH}'."
+echo ""
+echo "Skipped jobs (when no relevant files changed) count as passing."
+echo ""
+echo "To also require PR reviews, go to Settings → Branches in GitHub and"
+echo "edit the ruleset to add 'Require a pull request before merging'."
