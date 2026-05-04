@@ -33,7 +33,15 @@
       "!**/__mocks__/**"
     ],
     "coverageReporters": ["text", "lcov"],
-    "coverageDirectory": "coverage"
+    "coverageDirectory": "coverage",
+    "coverageThreshold": {
+      "global": {
+        "lines": 70,
+        "branches": 70,
+        "functions": 70,
+        "statements": 70
+      }
+    }
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
