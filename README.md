@@ -43,14 +43,15 @@ This script calls the GitHub REST API to configure the following rules:
 
 | GitHub check context | CI job ID | Triggered by |
 |---|---|---|
-| `CI / Mobile Test Suite` | `test-mobile` | `artifacts/mobile/**` or shared libs |
-| `CI / API Server Tests` | `test-api` | `artifacts/api-server/**` or shared libs |
-| `CI / Type Check` | `typecheck` | any package change |
+| `CI / Gate` | `gate` | every PR, always |
 
-> **Skipped jobs count as passing.** When a PR touches only the API server, the
-> `test-mobile` job is skipped by the path filter — GitHub marks a skipped check
-> as neutral, which satisfies a required-status-check rule. You do not need every
-> job to run on every PR.
+The `gate` job always runs on every PR. It passes only when the three
+path-filtered jobs (`test-mobile`, `test-api`, `typecheck`) all resulted in
+`success` or `skipped`. It fails if any of them failed or were cancelled.
+
+This means branch protection works correctly even on PRs that touch only docs or
+config files — where all three path-filtered jobs are skipped and no individual
+check would otherwise appear.
 
 **Required pull request reviews:**
 
@@ -82,10 +83,8 @@ Then set `require_code_owner_reviews` to `true` in `.github/protect-main.sh` and
 3. Enable **Require a pull request before merging** and set **Required approvals** to `1`.
 4. Check **Dismiss stale pull request approvals when new commits are pushed**.
 5. Enable **Require status checks to pass before merging**.
-6. Search for and add each of these checks:
-   - `CI / Mobile Test Suite`
-   - `CI / API Server Tests`
-   - `CI / Type Check`
+6. Search for and add this check:
+   - `CI / Gate`
 7. Optionally enable **Require branches to be up to date before merging** (the script sets `strict: true`).
 8. Save the ruleset.
 

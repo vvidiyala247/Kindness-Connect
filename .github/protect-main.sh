@@ -33,9 +33,8 @@ echo "This script will REPLACE all branch protection rules on '${BRANCH}'"
 echo "in repo '${REPO}' with the settings below:"
 echo ""
 echo "  Required status checks (CI must pass before merge):"
-echo "    • CI / Mobile Test Suite  (job: test-mobile)"
-echo "    • CI / API Server Tests   (job: test-api)"
-echo "    • CI / Type Check         (job: typecheck)"
+echo "    • CI / Gate  (job: gate — always runs; passes when the three"
+echo "                  path-filtered jobs all passed or were skipped)"
 echo ""
 echo "  required_pull_request_reviews :"
 echo "    • required_approving_review_count : 1"
@@ -62,14 +61,11 @@ fi
 #
 # Job ID        name: in ci.yml          GitHub check context
 # -----------   ----------------------   --------------------------------
-# test-mobile   Mobile Test Suite        CI / Mobile Test Suite
-# test-api      API Server Tests         CI / API Server Tests
-# typecheck     Type Check               CI / Type Check
+# gate          Gate                     CI / Gate
 #
-# NOTE: when a job is skipped (nothing in its watched paths changed) GitHub
-# marks the check as "skipped", which satisfies a required-status-check rule
-# just like a passing check does.  You do NOT need to force every job to run
-# on every PR — skipped jobs are treated as green.
+# The gate job always runs and succeeds only when test-mobile, test-api,
+# and typecheck all passed or were skipped.  Requiring a single always-present
+# check avoids the fragility of path-filtered jobs being absent on doc-only PRs.
 
 echo "Applying branch protection to ${REPO}:${BRANCH} ..."
 
@@ -82,9 +78,7 @@ gh api \
   "required_status_checks": {
     "strict": true,
     "contexts": [
-      "CI / Mobile Test Suite",
-      "CI / API Server Tests",
-      "CI / Type Check"
+      "CI / Gate"
     ]
   },
   "enforce_admins": false,
@@ -100,7 +94,9 @@ JSON
 echo ""
 echo "Done. Branch protection is now active on '${BRANCH}'."
 echo ""
-echo "Skipped jobs (when no relevant files changed) count as passing."
+echo "The 'CI / Gate' check always runs on every PR.  It passes when the three"
+echo "path-filtered jobs (test-mobile, test-api, typecheck) all passed or were"
+echo "skipped, and fails if any of them failed or were cancelled."
 echo ""
 echo "At least 1 approving review is now required before merging."
 echo "Stale approvals are dismissed automatically when new commits are pushed."
