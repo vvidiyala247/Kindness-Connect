@@ -167,10 +167,28 @@ export default function NewPostScreen() {
                 {selectedType.label}
               </Text>
             </View>
-            <Text style={[styles.charCount, { color: content.length > MAX_CHARS * 0.9 ? colors.destructive : colors.mutedForeground }]}>
-              {content.length}/{MAX_CHARS}
-            </Text>
+            <View style={styles.textareaHeaderRight}>
+              <MicButton
+                isListening={voice.isListening}
+                isSupported={voice.isSupported}
+                interimTranscript=""
+                onPress={voice.toggle}
+                variant="inline"
+              />
+              <Text style={[styles.charCount, { color: content.length > MAX_CHARS * 0.9 ? colors.destructive : colors.mutedForeground }]}>
+                {content.length}/{MAX_CHARS}
+              </Text>
+            </View>
           </View>
+
+          {voice.interimTranscript ? (
+            <View style={[styles.transcriptBubble, { backgroundColor: colors.card, borderColor: "#EF4444" }]}>
+              <Text style={[styles.transcriptText, { color: colors.foreground }]} numberOfLines={4}>
+                {voice.interimTranscript}
+                <Text style={{ color: "#EF4444" }}>|</Text>
+              </Text>
+            </View>
+          ) : null}
 
           <TextInput
             style={[
@@ -182,24 +200,18 @@ export default function NewPostScreen() {
               },
             ]}
             placeholder={
-              postType === "support"
+              voice.isListening
+                ? "Listening… speak your message"
+                : postType === "support"
                 ? "Share what you're going through — no judgment here..."
                 : "Share a moment of kindness you witnessed or experienced..."
             }
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={voice.isListening ? "#EF4444" : colors.mutedForeground}
             value={content}
             onChangeText={setContent}
             multiline
             maxLength={MAX_CHARS}
             textAlignVertical="top"
-          />
-
-          <MicButton
-            isListening={voice.isListening}
-            isSupported={voice.isSupported}
-            interimTranscript={voice.interimTranscript}
-            onPress={voice.toggle}
-            variant="block"
           />
         </View>
 
@@ -290,6 +302,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  textareaHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  transcriptBubble: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 10,
+  },
+  transcriptText: {
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 22,
+    fontStyle: "italic",
   },
   typePill: {
     flexDirection: "row",
