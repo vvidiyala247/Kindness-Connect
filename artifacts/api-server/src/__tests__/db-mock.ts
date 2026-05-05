@@ -86,4 +86,5 @@ export const DB_MODULE_MOCK = {
   commentsTable: {},
   kindnessScoresTable: {},
   reportsTable: {},
+  giftsTable: {},
 };

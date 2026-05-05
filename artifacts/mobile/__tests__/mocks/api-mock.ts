@@ -214,6 +214,14 @@ export class ApiMock {
       "POST /api/posts/:id/like",
       () => ({ status: 200, data: { liked: true } }),
     ],
+    [
+      "POST /api/posts/:id/gift",
+      () => ({ status: 200, data: { giftsRemainingToday: 4 } }),
+    ],
+    [
+      "PUT /api/users/push-token",
+      () => ({ status: 204, data: {} }),
+    ],
   ]);
 
   use(method: string, path: string, handler: RouteHandler) {

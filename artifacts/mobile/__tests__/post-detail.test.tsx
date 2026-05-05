@@ -60,7 +60,7 @@ describe("PostDetailScreen", () => {
 
   it("renders the comment input bar", () => {
     const { getByPlaceholderText } = renderWithProviders(<PostDetailScreen />);
-    expect(getByPlaceholderText("Add a kind comment...")).toBeTruthy();
+    expect(getByPlaceholderText("Add a kind comment\u2026")).toBeTruthy();
   });
 
   it("displays correct post content when API returns different post data", async () => {
@@ -148,6 +148,98 @@ describe("PostDetailScreen", () => {
     });
   });
 
+  it("shows Say Thanks banner when post is support type and current user is the author", async () => {
+    apiMock.use("GET", "/api/posts/:id", () => ({
+      status: 200,
+      data: {
+        id: "post-2",
+        type: "support",
+        content: "I need some help today.",
+        authorNickname: "BraveOtter",
+        authorId: "user-1",
+        likeCount: 0,
+        commentCount: 1,
+        createdAt: new Date().toISOString(),
+      },
+    }));
+
+    const { getAllByText } = renderWithProviders(<PostDetailScreen />);
+    await waitFor(() => {
+      expect(getAllByText(/Tap to thank your supporters/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  it("does not show Say Thanks banner when current user is not the post author", async () => {
+    const { queryAllByText, getAllByText } = renderWithProviders(<PostDetailScreen />);
+    await waitFor(() => getAllByText("Someone held the door for me today!").length > 0);
+    expect(queryAllByText(/Tap to thank your supporters/i).length).toBe(0);
+  });
+
+  it("does not show Say Thanks banner for kindness_act posts even when user is the author", async () => {
+    apiMock.use("GET", "/api/posts/:id", () => ({
+      status: 200,
+      data: {
+        id: "post-1",
+        type: "kindness_act",
+        content: "I helped someone carry their bags!",
+        authorNickname: "BraveOtter",
+        authorId: "user-1",
+        likeCount: 2,
+        commentCount: 1,
+        createdAt: new Date().toISOString(),
+      },
+    }));
+
+    const { queryAllByText, getAllByText } = renderWithProviders(<PostDetailScreen />);
+    await waitFor(() => getAllByText("I helped someone carry their bags!").length > 0);
+    expect(queryAllByText(/Tap to thank your supporters/i).length).toBe(0);
+  });
+
+  it("does not show Say Thanks banner when the support post has no comments", async () => {
+    apiMock.use("GET", "/api/posts/:id", () => ({
+      status: 200,
+      data: {
+        id: "post-2",
+        type: "support",
+        content: "I need some help today.",
+        authorNickname: "BraveOtter",
+        authorId: "user-1",
+        likeCount: 0,
+        commentCount: 0,
+        createdAt: new Date().toISOString(),
+      },
+    }));
+    apiMock.use("GET", "/api/posts/:id/comments", () => ({ status: 200, data: [] }));
+
+    const { queryAllByText, getAllByText } = renderWithProviders(<PostDetailScreen />);
+    await waitFor(() => getAllByText("I need some help today.").length > 0);
+    expect(queryAllByText(/Tap to thank your supporters/i).length).toBe(0);
+  });
+
+  it("pre-fills the comment input with a thank-you message when Say Thanks banner is tapped", async () => {
+    apiMock.use("GET", "/api/posts/:id", () => ({
+      status: 200,
+      data: {
+        id: "post-2",
+        type: "support",
+        content: "I need support.",
+        authorNickname: "BraveOtter",
+        authorId: "user-1",
+        likeCount: 0,
+        commentCount: 1,
+        createdAt: new Date().toISOString(),
+      },
+    }));
+
+    const { getAllByText, getByPlaceholderText } = renderWithProviders(<PostDetailScreen />);
+    await waitFor(() => getAllByText(/Tap to thank your supporters/i).length > 0);
+
+    fireEvent.click(getAllByText(/Tap to thank your supporters/i).at(-1)!);
+
+    const commentInput = getByPlaceholderText("Add a kind comment\u2026") as HTMLInputElement;
+    expect(commentInput.value).toMatch(/thank you/i);
+  });
+
   it("navigates back when back button is pressed", () => {
     const { container } = renderWithProviders(<PostDetailScreen />);
     const interactiveElements = container.querySelectorAll('[tabindex="0"]');
@@ -161,7 +253,7 @@ describe("PostDetailScreen", () => {
     const { getByPlaceholderText, container, getAllByText } = renderWithProviders(<PostDetailScreen />);
     await waitFor(() => getAllByText("Someone held the door for me today!").length > 0);
 
-    const commentInput = getByPlaceholderText("Add a kind comment...") as HTMLInputElement;
+    const commentInput = getByPlaceholderText("Add a kind comment\u2026") as HTMLInputElement;
     fireEvent.change(commentInput, { target: { value: "Nice post!" } });
 
     const interactiveElements = container.querySelectorAll('[tabindex="0"]');

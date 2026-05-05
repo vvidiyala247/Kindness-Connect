@@ -121,4 +121,59 @@ describe("FeedScreen", () => {
     });
   });
 
+  it("shows gift button on posts not authored by the current user", async () => {
+    const { getAllByLabelText } = renderWithProviders(<FeedScreen />);
+    await waitFor(() => {
+      expect(getAllByLabelText("Send kindness gift").length).toBeGreaterThan(0);
+    });
+  });
+
+  it("does not show gift button on posts authored by the current user", async () => {
+    apiMock.use("GET", "/api/posts", () => ({
+      status: 200,
+      data: {
+        posts: [
+          {
+            id: "own-post-1",
+            type: "kindness_act",
+            content: "My own post",
+            authorNickname: "BraveOtter",
+            authorId: "user-1",
+            likeCount: 0,
+            commentCount: 0,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+        nextCursor: null,
+      },
+    }));
+
+    const { queryAllByLabelText, getAllByText } = renderWithProviders(<FeedScreen />);
+    await waitFor(() => getAllByText("My own post").length > 0);
+    expect(queryAllByLabelText("Send kindness gift").length).toBe(0);
+  });
+
+  it("calls the gift API when the gift button is pressed", async () => {
+    const { getAllByLabelText } = renderWithProviders(<FeedScreen />);
+    await waitFor(() => getAllByLabelText("Send kindness gift").length > 0);
+
+    fireEvent.click(getAllByLabelText("Send kindness gift").at(0)!);
+
+    await waitFor(() => {
+      expect(apiMock.lastRequest?.method).toBe("POST");
+      expect(apiMock.lastRequest?.url).toMatch(/\/api\/posts\/.+\/gift/);
+    });
+  });
+
+  it("shows Sent! feedback after gift is successfully submitted", async () => {
+    const { getAllByLabelText, getAllByText } = renderWithProviders(<FeedScreen />);
+    await waitFor(() => getAllByLabelText("Send kindness gift").length > 0);
+
+    fireEvent.click(getAllByLabelText("Send kindness gift").at(0)!);
+
+    await waitFor(() => {
+      expect(getAllByText("Sent!").length).toBeGreaterThan(0);
+    });
+  });
+
 });
