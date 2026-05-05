@@ -43,7 +43,19 @@ Branch protection on `main` ensures no PR can be merged unless:
 1. All required CI jobs pass (or are skipped), **and**
 2. At least **1 approving review** has been submitted by another team member.
 
-### One-time setup (requires GitHub CLI)
+### Automatic enforcement (no manual steps required)
+
+The `.github/workflows/protect-main.yml` workflow keeps branch protection in sync automatically:
+
+- **On push to `main`** — triggers whenever `.github/protect-main.sh` changes, so any edit to the desired ruleset is applied immediately.
+- **Weekly schedule** — runs every Monday at 03:00 UTC as a drift check. If the rules were altered via the GitHub UI, they are restored automatically.
+- **Manual trigger** — you can also kick it off from the Actions tab at any time via `workflow_dispatch`.
+
+The workflow logs clearly whether the rules were already correct or were re-applied, and writes a one-line summary to the GitHub Actions job summary page.
+
+> **Secret required:** Add a `GH_PROTECTION_PAT` repository secret containing a classic Personal Access Token (or fine-grained PAT) with **`repo` scope** (classic) or **Administration → read/write** + **Contents → read** (fine-grained). Without this secret the workflow will fail gracefully and log an error — it will not silently skip enforcement.
+
+Running the script manually is **no longer necessary** for day-to-day maintenance. Manual execution remains available if you need to apply the rules before the next scheduled run (e.g., immediately after creating a fresh fork):
 
 ```bash
 # Authenticate if needed

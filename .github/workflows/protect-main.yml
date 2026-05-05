@@ -1,0 +1,136 @@
+name: Branch Protection
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/protect-main.sh"
+  schedule:
+    # Weekly drift check — every Monday at 03:00 UTC
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+jobs:
+  enforce:
+    name: Enforce branch protection rules
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch current protection rules
+        id: fetch
+        env:
+          GH_TOKEN: ${{ secrets.GH_PROTECTION_PAT }}
+        run: |
+          REPO="${{ github.repository }}"
+          BRANCH="main"
+
+          echo "Fetching current branch protection for ${REPO}:${BRANCH} ..."
+
+          STATUS=$(gh api \
+            "repos/${REPO}/branches/${BRANCH}/protection" \
+            --header "Accept: application/vnd.github+json" \
+            --silent \
+            --include \
+            2>&1 | head -1 | awk '{print $2}') || STATUS="000"
+
+          if [[ "$STATUS" == "200" ]]; then
+            CURRENT=$(gh api \
+              "repos/${REPO}/branches/${BRANCH}/protection" \
+              --header "Accept: application/vnd.github+json" \
+              --jq '{
+                strict:            .required_status_checks.strict,
+                contexts:          (.required_status_checks.contexts // []),
+                enforce_admins:    .enforce_admins.enabled,
+                dismiss_stale:     .required_pull_request_reviews.dismiss_stale_reviews,
+                require_owners:    .required_pull_request_reviews.require_code_owner_reviews,
+                review_count:      .required_pull_request_reviews.required_approving_review_count,
+                restrict_users:    ((.restrictions.users  // []) | map(.login)),
+                restrict_teams:    ((.restrictions.teams  // []) | map(.slug)),
+                restrict_apps:     ((.restrictions.apps   // []) | map(.slug))
+              }')
+            echo "current_rules=${CURRENT}" >> "$GITHUB_OUTPUT"
+            echo "protection_exists=true"   >> "$GITHUB_OUTPUT"
+          else
+            echo "No existing protection found (HTTP ${STATUS})."
+            echo "protection_exists=false" >> "$GITHUB_OUTPUT"
+            echo "current_rules={}"        >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check whether rules are already correct
+        id: diff
+        env:
+          CURRENT_RULES: ${{ steps.fetch.outputs.current_rules }}
+        run: |
+          DESIRED='{
+            "strict":         true,
+            "contexts":       ["CI / Gate"],
+            "enforce_admins": true,
+            "dismiss_stale":  true,
+            "require_owners": true,
+            "review_count":   1,
+            "restrict_users": [],
+            "restrict_teams": [],
+            "restrict_apps":  []
+          }'
+
+          # Normalise both JSON blobs for a stable comparison:
+          # sort all list fields so order differences don't produce false drift.
+          CURRENT_NORM=$(echo "$CURRENT_RULES" | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              for key in ('contexts', 'restrict_users', 'restrict_teams', 'restrict_apps'):
+                  d[key] = sorted(d.get(key, []))
+              print(json.dumps(d, sort_keys=True))
+          except Exception:
+              print('{}')
+          ")
+
+          DESIRED_NORM=$(echo "$DESIRED" | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          for key in ('contexts', 'restrict_users', 'restrict_teams', 'restrict_apps'):
+              d[key] = sorted(d.get(key, []))
+          print(json.dumps(d, sort_keys=True))
+          ")
+
+          echo "Current : ${CURRENT_NORM}"
+          echo "Desired : ${DESIRED_NORM}"
+
+          if [[ "$CURRENT_NORM" == "$DESIRED_NORM" ]]; then
+            echo "up_to_date=true" >> "$GITHUB_OUTPUT"
+            echo "Rules are already correct — no changes needed."
+          else
+            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+            echo "Rules are out of sync — re-applying."
+          fi
+
+      - name: Apply branch protection rules
+        if: steps.diff.outputs.up_to_date == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PROTECTION_PAT }}
+        run: |
+          REPO="${{ github.repository }}"
+          echo "Applying branch protection to ${REPO}:main ..."
+
+          # protect-main.sh skips the interactive prompt when stdin is not a tty
+          bash .github/protect-main.sh "${REPO}"
+
+          echo ""
+          echo "Branch protection rules were re-applied successfully."
+
+      - name: Summary
+        run: |
+          if [[ "${{ steps.diff.outputs.up_to_date }}" == "true" ]]; then
+            echo "### Branch Protection" >> "$GITHUB_STEP_SUMMARY"
+            echo ":white_check_mark: Rules were already correct — nothing changed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Branch Protection" >> "$GITHUB_STEP_SUMMARY"
+            echo ":arrows_counterclockwise: Rules were out of sync and have been re-applied." >> "$GITHUB_STEP_SUMMARY"
+          fi
