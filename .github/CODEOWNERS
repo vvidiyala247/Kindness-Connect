@@ -5,25 +5,32 @@
 # Rules are matched top-to-bottom; the LAST matching rule wins.
 # Patterns follow .gitignore syntax.
 #
-# Update the handles below with team slugs (e.g. @your-org/mobile-team) as
-# the team grows.  Team slugs require the team to exist in your GitHub
-# organisation and to have read access to the repository.
+# Team slugs (e.g. @vvidiyala247/mobile-team) require the team to exist in the
+# GitHub organisation and to have read access to this repository.
+# Create teams at: https://github.com/orgs/vvidiyala247/teams
 #
 # Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # ── Catch-all ─────────────────────────────────────────────────────────────────
-# Any file not matched by a more specific rule below requires approval from at
-# least one of these owners.
+# Any file not covered by a more specific rule below requires review from the
+# project lead.
 *   @vvidiyala247
 
 # ── Mobile app (Expo / React Native) ──────────────────────────────────────────
-artifacts/mobile/   @vvidiyala247
+# Reviewed by the mobile team.  Add members at:
+# https://github.com/orgs/vvidiyala247/teams/mobile-team
+artifacts/mobile/   @vvidiyala247/mobile-team
 
 # ── Backend API (Express) ─────────────────────────────────────────────────────
-artifacts/api-server/   @vvidiyala247
+# Reviewed by the backend team.  Add members at:
+# https://github.com/orgs/vvidiyala247/teams/backend-team
+artifacts/api-server/   @vvidiyala247/backend-team
 
 # ── Shared libraries ──────────────────────────────────────────────────────────
-lib/   @vvidiyala247
+# Reviewed by the infra/shared team.  Add members at:
+# https://github.com/orgs/vvidiyala247/teams/infra-team
+lib/   @vvidiyala247/infra-team
 
 # ── CI / GitHub config ────────────────────────────────────────────────────────
-.github/   @vvidiyala247
+# Reviewed by the infra/shared team — changes here affect every contributor.
+.github/   @vvidiyala247/infra-team
