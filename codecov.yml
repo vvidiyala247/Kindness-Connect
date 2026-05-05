@@ -10,6 +10,6 @@ coverage:
         threshold: 2%
 
 comment:
-  layout: "reach,diff,flags,files"
+  layout: "reach,diff,trend,flags,files"
   behavior: default
   require_changes: false

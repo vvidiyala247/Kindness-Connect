@@ -9,6 +9,20 @@
 
 A school-safe, mobile-first social platform for students to share anonymous support messages and kindness acts within their school community.
 
+## Coverage Trend
+
+The chart below shows coverage across recent commits on `main`. A rising line means tests are improving; a flat or falling line signals stagnation or regression. The 70 % threshold is the CI block point — PRs that would push total coverage below that floor are rejected automatically.
+
+[![Coverage over time](https://codecov.io/gh/vvidiyala247/kindness-connect/graphs/commits.svg?branch=main)](https://codecov.io/gh/vvidiyala247/kindness-connect)
+
+| Flag | Badge |
+|---|---|
+| Mobile | [![Mobile coverage](https://codecov.io/gh/vvidiyala247/kindness-connect/branch/main/graph/badge.svg?flag=mobile)](https://codecov.io/gh/vvidiyala247/kindness-connect/flags) |
+| API | [![API coverage](https://codecov.io/gh/vvidiyala247/kindness-connect/branch/main/graph/badge.svg?flag=api)](https://codecov.io/gh/vvidiyala247/kindness-connect/flags) |
+
+> Per-flag badges let you pinpoint which area regressed when the overall number drops.
+> Full historical graphs and a commit-by-commit breakdown are available on the [Codecov dashboard](https://codecov.io/gh/vvidiyala247/kindness-connect).
+
 ## CI Jobs
 
 | Badge | Job ID | Workflow file | Trigger |
