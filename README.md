@@ -68,6 +68,12 @@ check would otherwise appear.
 | Require code owner review | `true` — owners defined in `.github/CODEOWNERS` |
 | Enforce for admins | `true` — repository admins are subject to the same rules |
 
+**Push restrictions:**
+
+Direct pushes to `main` are fully disabled — nobody (including admins) may push commits directly to the branch. Every change must arrive via a pull request and pass the review and CI requirements above. The `restrictions` field in the API payload is set to an empty allowlist (`users: [], teams: [], apps: []`), which is the strictest available setting.
+
+If you ever need to grant a machine account (e.g. a release bot) the ability to push directly, add its GitHub username to the `"users"` array in the `restrictions` block inside `.github/protect-main.sh` before running the script, and document the reason here.
+
 ### CODEOWNERS
 
 `.github/CODEOWNERS` defines which people must review changes to each area of
@@ -97,7 +103,8 @@ team grows to route reviews to the right people per area automatically.
 6. Search for and add this check:
    - `CI / Gate`
 7. Optionally enable **Require branches to be up to date before merging** (the script sets `strict: true`).
-8. Save the ruleset.
+8. Under **Restrict who can push to matching branches**, leave the allowlist empty so that nobody can push directly to `main` — all changes must go through a pull request.
+9. Save the ruleset.
 
 ## Quick Start
 

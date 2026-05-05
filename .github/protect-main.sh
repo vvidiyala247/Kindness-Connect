@@ -40,7 +40,7 @@ echo "  required_pull_request_reviews :"
 echo "    • required_approving_review_count : 1"
 echo "    • dismiss_stale_reviews           : true  (new commits reset approvals)"
 echo "    • require_code_owner_reviews      : true  (owners defined in .github/CODEOWNERS)"
-echo "  restrictions                  : null  (no push restrictions)"
+echo "  restrictions                  : users=[], teams=[], apps=[]  (nobody may push directly to main)"
 echo "  enforce_admins                : true  (admins are also subject to protection rules)"
 echo ""
 echo "  All existing protection rules (including any PR review and push-restriction"
@@ -87,7 +87,11 @@ gh api \
     "require_code_owner_reviews": true,
     "required_approving_review_count": 1
   },
-  "restrictions": null
+  "restrictions": {
+    "users": [],
+    "teams": [],
+    "apps": []
+  }
 }
 JSON
 
@@ -102,3 +106,6 @@ echo "At least 1 approving review is now required before merging."
 echo "Stale approvals are dismissed automatically when new commits are pushed."
 echo ""
 echo "Code owner reviews are required. Ownership rules are defined in .github/CODEOWNERS."
+echo ""
+echo "Direct pushes to '${BRANCH}' are now blocked for everyone (users=[], teams=[], apps=[])."
+echo "All changes must go through a pull request."
