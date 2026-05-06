@@ -4,10 +4,40 @@ coverage:
       default:
         target: 60%
         threshold: 2%
+      mobile:
+        flags:
+          - mobile
+        target: 70%
+        threshold: 2%
+      api:
+        flags:
+          - api
+        target: 70%
+        threshold: 2%
     patch:
       default:
         target: 60%
         threshold: 2%
+      mobile:
+        flags:
+          - mobile
+        target: 70%
+        threshold: 2%
+      api:
+        flags:
+          - api
+        target: 70%
+        threshold: 2%
+
+flags:
+  mobile:
+    paths:
+      - artifacts/mobile/
+    carryforward: true
+  api:
+    paths:
+      - artifacts/api-server/
+    carryforward: true
 
 comment:
   layout: "reach,diff,trend,flags,files"
