@@ -85,36 +85,38 @@ router.patch("/admin/reports/:id", requireAdmin, async (req, res): Promise<void>
       .set({ status: status as "pending" | "reviewed" | "actioned" })
       .where(eq(reportsTable.id, reportId));
 
-    // Resolve content and author
+    // Only resolve content and author when we need to act on them
     let authorId: string | null = null;
 
-    if (report.targetType === "post") {
-      const [post] = await tx
-        .select({ authorId: postsTable.authorId, schoolId: postsTable.schoolId })
-        .from(postsTable)
-        .where(and(eq(postsTable.id, report.targetId), eq(postsTable.schoolId, adminSchoolId)));
+    if (hideContent || suspendUser) {
+      if (report.targetType === "post") {
+        const [post] = await tx
+          .select({ authorId: postsTable.authorId, schoolId: postsTable.schoolId })
+          .from(postsTable)
+          .where(and(eq(postsTable.id, report.targetId), eq(postsTable.schoolId, adminSchoolId)));
 
-      if (hideContent && post) {
-        await tx
-          .update(postsTable)
-          .set({ isHidden: true })
-          .where(eq(postsTable.id, report.targetId));
-      }
-      authorId = post?.authorId ?? null;
-    } else if (report.targetType === "comment") {
-      const [commentRow] = await tx
-        .select({ comment: commentsTable })
-        .from(commentsTable)
-        .innerJoin(postsTable, eq(commentsTable.postId, postsTable.id))
-        .where(and(eq(commentsTable.id, report.targetId), eq(postsTable.schoolId, adminSchoolId)));
+        if (hideContent && post) {
+          await tx
+            .update(postsTable)
+            .set({ isHidden: true })
+            .where(eq(postsTable.id, report.targetId));
+        }
+        authorId = post?.authorId ?? null;
+      } else if (report.targetType === "comment") {
+        const [commentRow] = await tx
+          .select({ comment: commentsTable })
+          .from(commentsTable)
+          .innerJoin(postsTable, eq(commentsTable.postId, postsTable.id))
+          .where(and(eq(commentsTable.id, report.targetId), eq(postsTable.schoolId, adminSchoolId)));
 
-      if (hideContent && commentRow) {
-        await tx
-          .update(commentsTable)
-          .set({ isHidden: true })
-          .where(eq(commentsTable.id, report.targetId));
+        if (hideContent && commentRow) {
+          await tx
+            .update(commentsTable)
+            .set({ isHidden: true })
+            .where(eq(commentsTable.id, report.targetId));
+        }
+        authorId = commentRow?.comment.authorId ?? null;
       }
-      authorId = commentRow?.comment.authorId ?? null;
     }
 
     // Issue automatic warning when content is hidden (actioned)
