@@ -6,6 +6,7 @@
 [![API Tests](https://img.shields.io/github/actions/workflow/status/vvidiyala247/kindness-connect/ci.yml?job=test-api&label=API%20Tests&logo=node.js)](https://github.com/vvidiyala247/kindness-connect/actions/workflows/ci.yml?query=job%3Atest-api)
 [![Type Check](https://img.shields.io/github/actions/workflow/status/vvidiyala247/kindness-connect/ci.yml?job=typecheck&label=Type%20Check&logo=typescript)](https://github.com/vvidiyala247/kindness-connect/actions/workflows/ci.yml?query=job%3Atypecheck)
 [![Coverage](https://codecov.io/gh/vvidiyala247/kindness-connect/branch/main/graph/badge.svg)](https://codecov.io/gh/vvidiyala247/kindness-connect)
+[![Last successful CI run](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Fvvidiyala247%2Fkindness-connect%2Factions%2Fworkflows%2Fci.yml%2Fruns%3Fstatus%3Dsuccess%26per_page%3D1%26branch%3Dmain&query=%24.workflow_runs%5B0%5D.run_started_at&label=Last%20CI%20run&logo=githubactions&logoColor=white&cacheSeconds=300)](https://github.com/vvidiyala247/kindness-connect/actions/workflows/ci.yml)
 
 A school-safe, mobile-first social platform for students to share anonymous support messages and kindness acts within their school community.
 
