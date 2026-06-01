@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: write
 
     steps:
       - name: Checkout repository
@@ -125,6 +126,39 @@ jobs:
           echo ""
           echo "Branch protection rules were re-applied successfully."
 
+      - name: Notify team of drift correction
+        if: steps.diff.outputs.up_to_date == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PROTECTION_PAT }}
+        run: |
+          REPO="${{ github.repository }}"
+          BRANCH="main"
+          TIMESTAMP="${{ github.run_started_at }}"
+          RUN_URL="https://github.com/${REPO}/actions/runs/${{ github.run_id }}"
+
+          gh issue create \
+            --repo "${REPO}" \
+            --title "⚠️ Branch protection on \`${BRANCH}\` was automatically restored" \
+            --body "## Branch protection drift detected and corrected
+
+          The weekly drift-check workflow found that branch protection rules on \`${BRANCH}\` had drifted from the desired state and **automatically re-applied them**.
+
+          | Field | Value |
+          |---|---|
+          | **Repository** | \`${REPO}\` |
+          | **Branch** | \`${BRANCH}\` |
+          | **Detected at** | ${TIMESTAMP} |
+          | **Workflow run** | [View run](${RUN_URL}) |
+
+          ### What to do
+          - Review the workflow run linked above to see which rules differed.
+          - Investigate whether a team member changed the settings intentionally via the GitHub UI.
+          - If the change was intentional, update \`.github/protect-main.sh\` to match and close this issue.
+          - If the change was unintentional (or unknown), audit recent repository admin activity.
+
+          _This issue was opened automatically by the Branch Protection workflow. Close it once investigated._" \
+            --label "security,automated"
+
       - name: Summary
         run: |
           if [[ "${{ steps.diff.outputs.up_to_date }}" == "true" ]]; then
@@ -133,4 +167,6 @@ jobs:
           else
             echo "### Branch Protection" >> "$GITHUB_STEP_SUMMARY"
             echo ":arrows_counterclockwise: Rules were out of sync and have been re-applied." >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo ":bell: A GitHub issue has been opened to notify the team." >> "$GITHUB_STEP_SUMMARY"
           fi
