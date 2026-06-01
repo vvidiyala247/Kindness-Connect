@@ -53,6 +53,7 @@ function matchRoute(url: string, method: string, routes: Map<string, RouteHandle
 export class ApiMock {
   private overrides = new Map<string, RouteHandler>();
   public lastRequest: { url: string; method: string; body: unknown } | null = null;
+  public requests: Array<{ url: string; method: string; body: unknown }> = [];
 
   private defaultRoutes = new Map<string, RouteHandler>([
     [
@@ -222,6 +223,125 @@ export class ApiMock {
       "PUT /api/users/push-token",
       () => ({ status: 204, data: {} }),
     ],
+    [
+      "PUT /api/auth/me",
+      async (url, options) => {
+        const body = JSON.parse((options.body as string) ?? "{}");
+        return {
+          status: 200,
+          data: {
+            id: "user-1",
+            nickname: "BraveOtter",
+            schoolId: "school-1",
+            role: "student",
+            kindnessScore: 10,
+            isSuspended: false,
+            avatar: body.avatar ?? null,
+            createdAt: "2024-01-01T00:00:00.000Z",
+          },
+        };
+      },
+    ],
+    [
+      "GET /api/admin/reports",
+      () => ({
+        status: 200,
+        data: [
+          {
+            id: "report-1",
+            targetType: "post",
+            targetId: "post-1",
+            reason: "bullying",
+            status: "pending",
+            reporterId: "user-3",
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: "report-2",
+            targetType: "comment",
+            targetId: "comment-1",
+            reason: "spam",
+            status: "reviewed",
+            reporterId: "user-4",
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      }),
+    ],
+    [
+      "PUT /api/admin/reports/:id",
+      () => ({
+        status: 200,
+        data: {
+          id: "report-1",
+          targetType: "post",
+          targetId: "post-1",
+          reason: "bullying",
+          status: "reviewed",
+          reporterId: "user-3",
+          createdAt: new Date().toISOString(),
+        },
+      }),
+    ],
+    [
+      "GET /api/admin/users",
+      () => ({
+        status: 200,
+        data: [
+          {
+            id: "user-2",
+            nickname: "CalmFox",
+            schoolId: "school-1",
+            role: "student",
+            kindnessScore: 5,
+            isSuspended: false,
+            warningCount: 0,
+            createdAt: "2024-01-01T00:00:00.000Z",
+          },
+          {
+            id: "user-3",
+            nickname: "WildBear",
+            schoolId: "school-1",
+            role: "student",
+            kindnessScore: 2,
+            isSuspended: false,
+            warningCount: 1,
+            createdAt: "2024-01-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    ],
+    [
+      "PUT /api/admin/users/:id",
+      () => ({
+        status: 200,
+        data: {
+          id: "user-2",
+          nickname: "CalmFox",
+          schoolId: "school-1",
+          role: "student",
+          kindnessScore: 5,
+          isSuspended: false,
+          warningCount: 1,
+          createdAt: "2024-01-01T00:00:00.000Z",
+        },
+      }),
+    ],
+    [
+      "POST /api/schools",
+      async (url, options) => {
+        const body = JSON.parse((options.body as string) ?? "{}");
+        return {
+          status: 201,
+          data: {
+            id: "school-3",
+            name: body.name ?? "New School",
+            joinCode: "NEW001",
+            isActive: true,
+          },
+        };
+      },
+    ],
   ]);
 
   use(method: string, path: string, handler: RouteHandler) {
@@ -231,6 +351,7 @@ export class ApiMock {
   reset() {
     this.overrides.clear();
     this.lastRequest = null;
+    this.requests = [];
   }
 
   async handle(input: RequestInfo | URL, options: RequestInit = {}): Promise<ReturnType<typeof makeFetchResponse>> {
@@ -243,6 +364,7 @@ export class ApiMock {
     }
 
     this.lastRequest = { url, method, body };
+    this.requests.push({ url, method, body });
 
     const handler =
       matchRoute(url, method, this.overrides) ??

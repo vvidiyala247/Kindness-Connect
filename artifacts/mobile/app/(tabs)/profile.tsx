@@ -86,7 +86,7 @@ function AvatarPickerModal({
           <Text style={[styles.pickerTitle, { color: colors.foreground }]}>
             Choose Your Avatar
           </Text>
-          <TouchableOpacity onPress={onClose} style={styles.pickerClose}>
+          <TouchableOpacity onPress={onClose} style={styles.pickerClose} accessibilityLabel="Close avatar picker">
             <Feather name="x" size={22} color={colors.foreground} />
           </TouchableOpacity>
         </View>

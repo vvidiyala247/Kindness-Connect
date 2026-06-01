@@ -115,7 +115,7 @@ export function PostCard({ post, currentUserId, commentCount, onReport }: PostCa
       </Text>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.statBtn} onPress={handleLike}>
+        <TouchableOpacity style={styles.statBtn} onPress={handleLike} accessibilityLabel="Like post">
           {likeMutation.isPending ? (
             <ActivityIndicator size="small" color={typeColor} />
           ) : (

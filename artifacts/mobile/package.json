@@ -36,10 +36,10 @@
     "coverageDirectory": "coverage",
     "coverageThreshold": {
       "global": {
-        "lines": 40,
-        "branches": 30,
-        "functions": 25,
-        "statements": 35
+        "lines": 65,
+        "branches": 55,
+        "functions": 55,
+        "statements": 63
       }
     }
   },
